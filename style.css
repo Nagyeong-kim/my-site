@@ -1,0 +1,112 @@
+/*
+  style.css — 한양대학교 컨셉 정적 사이트 스타일
+  - 수정 위치 안내는 아래 주석에 표시되어 있습니다.
+  - 색상은 :root 변수에서 수정하세요.
+*/
+
+:root{
+  --hanyang-blue-1: #0b5fa5; /* 대표 파란색 */
+  --hanyang-blue-2: #1464c6;
+  --hanyang-blue-3: #1e90ff;
+  --bg: #ffffff;
+  --text: #0b1a2b;
+  --muted: #6b7280;
+  --surface: #f7f9fb;
+  --radius: 8px;
+  --container-max: 1100px;
+}
+
+/* 다크 모드 변수: HTML의 data-theme="dark"로 전환됩니다 */
+:root[data-theme="dark"]{
+  --bg: #071229;
+  --text: #e6f0ff;
+  --muted: #9fb6d9;
+  --surface: #07243b;
+}
+
+/* 기본 리셋과 타이포그래피 */
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background:var(--bg);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  line-height:1.4;
+}
+.container{
+  width:90%;
+  max-width:var(--container-max);
+  margin:0 auto;
+}
+
+.skip-link{
+  position:absolute;
+  left:-9999px;
+  top:auto;
+  width:1px;height:1px;overflow:hidden;
+}
+.skip-link:focus{left:8px;top:8px;width:auto;height:auto;padding:8px;background:#fff;color:#000;border-radius:4px}
+
+/* Header */
+.site-header{background:linear-gradient(90deg,var(--hanyang-blue-1),var(--hanyang-blue-2));color:#fff}
+.header-inner{
+  display:flex;align-items:center;justify-content:space-between;padding:16px 0;
+}
+.brand a{color:#fff;text-decoration:none;font-weight:700;font-size:1.125rem}
+.main-nav ul{display:flex;gap:12px;list-style:none;margin:0;padding:0}
+.main-nav a{color:rgba(255,255,255,0.95);text-decoration:none}
+.controls{display:flex;gap:8px;align-items:center}
+.theme-toggle{background:transparent;border:1px solid rgba(255,255,255,0.2);color:#fff;padding:6px 10px;border-radius:6px;cursor:pointer}
+
+/* Hero */
+.hero{padding:64px 0;background:linear-gradient(180deg, rgba(255,255,255,0.04), transparent)}
+.hero-inner{display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.hero h1{font-size:2rem;margin:0}
+.lead{color:var(--muted);margin:0}
+.btn{display:inline-block;padding:10px 16px;border-radius:8px;border:none;background:transparent;cursor:pointer}
+.btn.primary{background:var(--hanyang-blue-3);color:#fff}
+
+/* Features */
+.features{padding:48px 0}
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.feature{background:var(--surface);padding:16px;border-radius:var(--radius)}
+.feature h3{margin-top:0}
+
+/* Gallery */
+.gallery{padding:48px 0}
+.gallery-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;list-style:none;padding:0;margin:0}
+.gallery-item{border:0;padding:0;background:none;cursor:pointer}
+.gallery-item img{width:100%;height:auto;display:block;border-radius:6px}
+
+/* Modal */
+.img-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(2,6,23,0.6);z-index:50}
+.img-modal[aria-hidden="false"]{display:flex}
+.img-modal-inner{position:relative;max-width:90%;max-height:90%;}
+.img-modal img{max-width:100%;max-height:80vh;border-radius:6px;display:block}
+.modal-close{position:absolute;right:-8px;top:-8px;background:#fff;border-radius:50%;border:0;padding:6px;cursor:pointer}
+
+/* Contact */
+.contact{padding:48px 0}
+.contact-form{display:grid;gap:8px;max-width:520px}
+.contact-form input, .contact-form textarea{padding:10px;border-radius:6px;border:1px solid #d1d5db;background:transparent;color:var(--text)}
+
+/* Footer */
+.site-footer{padding:24px 0;text-align:center;background:transparent;color:var(--muted)}
+
+/* 반응형 */
+@media (max-width:900px){
+  .features-grid{grid-template-columns:repeat(2,1fr)}
+  .gallery-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:600px){
+  .header-inner{flex-direction:row;gap:8px}
+  .main-nav{display:none}
+  .features-grid{grid-template-columns:1fr}
+  .gallery-grid{grid-template-columns:1fr}
+  .hero h1{font-size:1.5rem}
+}
+
+/* 색상 또는 타이포를 바꾸려면 :root 변수들을 수정하세요. */
