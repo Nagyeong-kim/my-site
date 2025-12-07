@@ -65,7 +65,7 @@
           <div class="calendar-sidebar">
             <!-- Add Event Form -->
             <div class="event-form-card">
-              <h3>Add Event</h3>
+              <h3 id="form-title">Add Event</h3>
               <form id="event-form">
                 <label>
                   Title
@@ -108,8 +108,9 @@
                   <input id="event-repeat-end" type="date">
                 </label>
                 <div style="display:flex;gap:8px;margin-top:12px;">
-                  <button type="submit" class="btn primary">Add Event</button>
+                  <button type="submit" class="btn primary" id="form-submit-btn">Add Event</button>
                   <button type="reset" class="btn">Clear</button>
+                  <button type="button" class="btn" id="form-cancel-btn" style="display:none;">Cancel</button>
                 </div>
               </form>
             </div>

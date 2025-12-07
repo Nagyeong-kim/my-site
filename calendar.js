@@ -71,6 +71,11 @@
   const eventRepeatEndEl = document.getElementById('event-repeat-end');
   const selectedDateDisplayEl = document.getElementById('selected-date-display');
   const eventsListEl = document.getElementById('events-list');
+  const formTitleEl = document.getElementById('form-title');
+  const formSubmitBtn = document.getElementById('form-submit-btn');
+  const formCancelBtn = document.getElementById('form-cancel-btn');
+  
+  let editingEventId = null;
 
   function getDaysInMonth(year, month){
     return new Date(year, month + 1, 0).getDate();
@@ -190,6 +195,11 @@
       const actions = document.createElement('div');
       actions.className = 'event-actions';
       
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn btn-small';
+      editBtn.textContent = 'Edit';
+      editBtn.addEventListener('click', () => editEvent(event));
+      
       const deleteBtn = document.createElement('button');
       deleteBtn.className = 'btn btn-small';
       deleteBtn.textContent = 'Delete';
@@ -201,6 +211,7 @@
         }
       });
       
+      actions.appendChild(editBtn);
       actions.appendChild(deleteBtn);
       
       el.appendChild(titleRow);
@@ -268,6 +279,32 @@
     return colors[colorName] || colors['blue'];
   }
 
+  function editEvent(event){
+    editingEventId = event.id;
+    eventTitleEl.value = event.title;
+    eventDateEl.value = event.date;
+    eventTimeEl.value = event.time || '';
+    eventDescEl.value = event.desc || '';
+    eventColorEl.value = event.color || 'blue';
+    eventRepeatEl.value = event.repeat || 'none';
+    eventRepeatEndEl.value = event.repeatEnd || '';
+    
+    formTitleEl.textContent = 'Edit Event';
+    formSubmitBtn.textContent = 'Update Event';
+    formCancelBtn.style.display = 'inline-block';
+    
+    // Scroll to form
+    document.querySelector('.event-form-card').scrollIntoView({behavior: 'smooth'});
+  }
+
+  function cancelEdit(){
+    editingEventId = null;
+    eventForm.reset();
+    formTitleEl.textContent = 'Add Event';
+    formSubmitBtn.textContent = 'Add Event';
+    formCancelBtn.style.display = 'none';
+  }
+
   // Event handlers
   prevBtn.addEventListener('click', () => {
     currentDate.setMonth(currentDate.getMonth() - 1);
@@ -292,40 +329,60 @@
     
     if(!title || !date) return alert('Title and date are required');
     
-    const baseEvent = {
-      title, date, time, desc, color,
-      repeat, repeatEnd: repeatEnd || null,
-      important: false,
-      added: Date.now()
-    };
-    
-    await idbPut(baseEvent);
-    
-    // Generate repeating events if needed
-    if(repeat !== 'none' && repeatEnd){
-      const startDate = new Date(date);
-      const endDate = new Date(repeatEnd);
-      let currentDate = new Date(startDate);
+    if(editingEventId){
+      // Update existing event
+      const allEvents = await idbGetAll();
+      const event = allEvents.find(e => e.id === editingEventId);
+      if(event){
+        event.title = title;
+        event.date = date;
+        event.time = time;
+        event.desc = desc;
+        event.color = color;
+        event.repeat = repeat;
+        event.repeatEnd = repeatEnd || null;
+        await idbPut(event);
+      }
+      cancelEdit();
+    } else {
+      // Add new event
+      const baseEvent = {
+        title, date, time, desc, color,
+        repeat, repeatEnd: repeatEnd || null,
+        important: false,
+        added: Date.now()
+      };
       
-      while(currentDate <= endDate){
-        currentDate = addDays(currentDate, getRepeatInterval(repeat));
-        if(currentDate <= endDate){
-          const dateStr = currentDate.toISOString().split('T')[0];
-          await idbPut({
-            ...baseEvent,
-            date: dateStr
-          });
+      await idbPut(baseEvent);
+      
+      // Generate repeating events if needed
+      if(repeat !== 'none' && repeatEnd){
+        const startDate = new Date(date);
+        const endDate = new Date(repeatEnd);
+        let currentDate = new Date(startDate);
+        
+        while(currentDate <= endDate){
+          currentDate = addDays(currentDate, getRepeatInterval(repeat));
+          if(currentDate <= endDate){
+            const dateStr = currentDate.toISOString().split('T')[0];
+            await idbPut({
+              ...baseEvent,
+              date: dateStr
+            });
+          }
         }
       }
     }
     
     eventForm.reset();
-    alert('Event added!');
+    alert(editingEventId ? 'Event updated!' : 'Event added!');
     
     // Re-render events for selected date
     if(selectedDate) await renderEventsForDate(selectedDate);
     renderCalendar();
   });
+
+  formCancelBtn.addEventListener('click', cancelEdit);
 
   function addDays(date, days){
     const result = new Date(date);
