@@ -73,13 +73,19 @@
   const searchEl = document.getElementById('eq-search');
   const statusFilterEl = document.getElementById('filter-status');
 
-  const categories = ['laser', 'optical', 'measurement', 'control', 'material', 'other'];
+  const categories = ['laser', 'optical', 'measurement', 'power-meter', 'spectroscopy', 'imaging', 'alignment', 'control', 'material', 'safety', 'support', 'other'];
   const categoryLabels = {
     'laser': 'Laser System',
     'optical': 'Optical Components',
-    'measurement': 'Measurement',
+    'measurement': 'Measurement - General',
+    'power-meter': 'Power Meter',
+    'spectroscopy': 'Spectroscopy',
+    'imaging': 'Imaging Equipment',
+    'alignment': 'Alignment Tools',
     'control': 'Control & Electronics',
     'material': 'Materials',
+    'safety': 'Safety Equipment',
+    'support': 'Support & Accessories',
     'other': 'Other'
   };
 
@@ -88,11 +94,17 @@
       'laser': '#ef4444',
       'optical': '#3b82f6',
       'measurement': '#10b981',
-      'control': '#f59e0b',
+      'power-meter': '#06b6d4',
+      'spectroscopy': '#a855f7',
+      'imaging': '#ec4899',
+      'alignment': '#f59e0b',
+      'control': '#f97316',
       'material': '#8b5cf6',
-      'other': '#6b7280'
+      'safety': '#dc2626',
+      'support': '#6b7280',
+      'other': '#9ca3af'
     };
-    return colors[category] || '#6b7280';
+    return colors[category] || '#9ca3af';
   }
 
   function getStatusBadge(status){
