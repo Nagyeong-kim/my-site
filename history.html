@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Activities — NK (KNK)</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">메인으로 건너뛰기</a>
+
+  <header role="banner" class="site-header">
+    <div class="container header-inner">
+      <div class="logo-section">
+        <h1 class="site-title">NK (KNK)</h1>
+        <p class="site-subtitle">Advanced Solid State Laser Lab — Hanyang University</p>
+      </div>
+
+      <nav role="navigation" aria-label="주요 메뉴" class="main-nav">
+        <ul>
+          <li><a href="index.html" class="nav-link">Home</a></li>
+          <li><a href="research.html" class="nav-link">Research</a></li>
+          <li><a href="calendar.html" class="nav-link">Calendar</a></li>
+          <li><a href="equipment.html" class="nav-link">Equipment</a></li>
+          <li><a href="history.html" class="nav-link">Activities</a></li>
+          <li><a href="index.html#contact" class="nav-link">Contact</a></li>
+        </ul>
+      </nav>
+
+      <button id="theme-toggle" class="theme-toggle" aria-pressed="false" aria-label="테마 전환">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"/>
+        </svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main id="main" role="main">
+    <section class="history-section" aria-labelledby="history-title">
+      <div class="container">
+        <h2 id="history-title">Activities & Research History</h2>
+
+        <div class="history-layout">
+          <div class="history-form-card">
+            <h3 id="form-title">Add Activity</h3>
+            <form id="history-form">
+              <label>Title<input id="hist-title" type="text" required placeholder="Activity title"></label>
+              <label>Researcher<input id="hist-researcher" type="text" placeholder="Name (e.g. Kim, NK)"></label>
+              <label>Category
+                <select id="hist-category">
+                  <option value="research">Research Project</option>
+                  <option value="presentation">Conference / Presentation</option>
+                  <option value="paper">Paper / Publication</option>
+                  <option value="patent">Patent</option>
+                  <option value="other">Other</option>
+                </select>
+              </label>
+              <label>Role<input id="hist-role" type="text" placeholder="PI / Co-author / Presenter"></label>
+              <label>Start Date<input id="hist-start" type="date" required></label>
+              <label>End Date<input id="hist-end" type="date"></label>
+              <label style="display:flex;gap:10px;align-items:center;"><input id="hist-ongoing" type="checkbox"> Ongoing</label>
+              <label>Status
+                <select id="hist-status">
+                  <option value="ongoing">Ongoing</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </label>
+              <label>Description<textarea id="hist-desc" placeholder="Short description"></textarea></label>
+              <label>Attachment (PDF)<input id="hist-attach" type="file" accept="application/pdf"></label>
+              <div style="display:flex;gap:8px;margin-top:12px;">
+                <button type="submit" class="btn primary" id="form-submit-btn">Add</button>
+                <button type="reset" class="btn">Clear</button>
+                <button type="button" class="btn" id="form-cancel-btn" style="display:none;">Cancel</button>
+              </div>
+            </form>
+          </div>
+
+          <div class="history-list-card">
+            <h3>Activity Timeline</h3>
+            <div id="history-list" class="history-list"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer role="contentinfo" class="site-footer">
+    <div class="container">
+      <p>© 2025 NK (KNK). Advanced Solid State Laser Lab — Hanyang University.</p>
+    </div>
+  </footer>
+
+  <script src="script.js" defer></script>
+  <script src="history.js" defer></script>
+</body>
+</html>

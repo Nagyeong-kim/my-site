@@ -410,6 +410,19 @@ main {
 
 .event-item .event-meta { color: var(--medium-text); font-size:0.9rem; margin-bottom:6px; }
 
+/* History / Activities styles */
+.history-layout { display:flex; gap:24px; align-items:flex-start; }
+.history-form-card, .history-list-card { background: var(--light-bg); border:1px solid var(--border-color); border-radius:var(--radius); padding:20px; }
+.history-form-card { width:360px; }
+.history-list-card { flex:1; }
+.history-list { display:flex; flex-direction:column; gap:12px; }
+.history-card { border-left: 4px solid var(--primary-blue); padding:12px; background:var(--surface-bg); border-radius:6px; }
+.history-card-header { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.history-meta { color:var(--light-text); font-size:0.9rem; }
+.history-body { margin-top:8px; color:var(--medium-text); }
+.history-actions { display:flex; gap:8px; margin-top:8px; }
+.history-attach a { color:var(--primary-blue); text-decoration:underline; }
+
 .news-item {
   display: flex;
   gap: 24px;
