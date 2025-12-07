@@ -43,11 +43,7 @@
       <div class="container">
         <h2 id="research-portal-title">Research — Papers & Patents</h2>
 
-        <div class="research-tabs" style="margin-bottom:16px;">
-          <button class="tab-btn active" data-target="tab-papers">Papers</button>
-          <button class="tab-btn" data-target="tab-activities">Activities</button>
-        </div>
-
+        <!-- Combined Research view: Papers (upload/search) followed by Activities timeline -->
         <div id="tab-papers" class="tab-panel">
           <div class="research-tools">
             <div class="left-col">
@@ -83,8 +79,9 @@
           </div>
         </div>
 
-        <div id="tab-activities" class="tab-panel" style="display:none;">
-          <div class="history-layout">
+        <!-- Activities section (moved below Papers) -->
+        <div id="tab-activities" class="tab-panel">
+          <div class="history-layout" style="margin-top:24px;">
             <div class="history-form-card">
               <h3 id="form-title">Add Activity</h3>
               <form id="history-form">
@@ -140,16 +137,7 @@
   <script src="research.js" defer></script>
   <script src="history.js" defer></script>
   <script>
-    // Simple tab switching for Research page
-    document.addEventListener('DOMContentLoaded', ()=>{
-      const tabs = document.querySelectorAll('.tab-btn');
-      tabs.forEach(btn => btn.addEventListener('click', ()=>{
-        tabs.forEach(b=>b.classList.remove('active'));
-        btn.classList.add('active');
-        const target = btn.dataset.target;
-        document.querySelectorAll('.tab-panel').forEach(p=> p.style.display = (p.id===target? 'block':'none'));
-      }));
-    });
+    // No tab switching — combined view. Keep research and history scripts loaded.
   </script>
 </body>
 </html>
