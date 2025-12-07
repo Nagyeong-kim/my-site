@@ -330,19 +330,53 @@
     if(!title || !date) return alert('Title and date are required');
     
     if(editingEventId){
-      // Update existing event
+      // Update existing event - delete old repeating events and create new ones
       const allEvents = await idbGetAll();
-      const event = allEvents.find(e => e.id === editingEventId);
-      if(event){
-        event.title = title;
-        event.date = date;
-        event.time = time;
-        event.desc = desc;
-        event.color = color;
-        event.repeat = repeat;
-        event.repeatEnd = repeatEnd || null;
-        await idbPut(event);
+      
+      // Find and delete all events with the same base properties (repeating events)
+      const baseEventToDelete = allEvents.find(e => e.id === editingEventId);
+      if(baseEventToDelete && baseEventToDelete.repeat !== 'none'){
+        // Delete all events that match the repeat pattern
+        for(const evt of allEvents){
+          if(evt.title === baseEventToDelete.title && 
+             evt.color === baseEventToDelete.color &&
+             evt.repeat === baseEventToDelete.repeat){
+            await idbDelete(evt.id);
+          }
+        }
+      } else {
+        // Just delete the single event
+        await idbDelete(editingEventId);
       }
+      
+      // Create updated base event
+      const baseEvent = {
+        title, date, time, desc, color,
+        repeat, repeatEnd: repeatEnd || null,
+        important: false,
+        added: Date.now()
+      };
+      
+      await idbPut(baseEvent);
+      
+      // Generate repeating events if needed
+      if(repeat !== 'none' && repeatEnd){
+        const startDate = new Date(date);
+        const endDate = new Date(repeatEnd);
+        let currentDate = new Date(startDate);
+        
+        while(currentDate <= endDate){
+          currentDate = addDays(currentDate, getRepeatInterval(repeat));
+          if(currentDate <= endDate){
+            const dateStr = currentDate.toISOString().split('T')[0];
+            await idbPut({
+              ...baseEvent,
+              date: dateStr
+            });
+          }
+        }
+      }
+      
       cancelEdit();
     } else {
       // Add new event
