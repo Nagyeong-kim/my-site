@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Equipment — NK (KNK)</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">메인으로 건너뛰기</a>
+
+  <header role="banner" class="site-header">
+    <div class="container header-inner">
+      <div class="logo-section">
+        <h1 class="site-title">NK (KNK)</h1>
+        <p class="site-subtitle">Advanced Solid State Laser Lab — Hanyang University</p>
+      </div>
+
+      <nav role="navigation" aria-label="주요 메뉴" class="main-nav">
+        <ul>
+          <li><a href="index.html" class="nav-link">Home</a></li>
+          <li><a href="research.html" class="nav-link">Research</a></li>
+          <li><a href="calendar.html" class="nav-link">Calendar</a></li>
+          <li><a href="equipment.html" class="nav-link">Equipment</a></li>
+          <li><a href="index.html#contact" class="nav-link">Contact</a></li>
+        </ul>
+      </nav>
+
+      <button id="theme-toggle" class="theme-toggle" aria-pressed="false" aria-label="테마 전환">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="5"/>
+        </svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main id="main" role="main">
+    <section class="equipment-section" aria-labelledby="equipment-title">
+      <div class="container">
+        <h2 id="equipment-title">Lab Equipment & Materials</h2>
+
+        <div class="equipment-layout">
+          <!-- Left: Add/Edit Equipment Form -->
+          <div class="equipment-form-card">
+            <h3 id="form-title">Add Equipment</h3>
+            <form id="equipment-form">
+              <label>
+                Equipment Name *
+                <input id="eq-name" type="text" required placeholder="장비명">
+              </label>
+              
+              <label>
+                Category
+                <select id="eq-category">
+                  <option value="laser">Laser System</option>
+                  <option value="optical">Optical Components</option>
+                  <option value="measurement">Measurement</option>
+                  <option value="control">Control & Electronics</option>
+                  <option value="material">Materials</option>
+                  <option value="other">Other</option>
+                </select>
+              </label>
+
+              <label>
+                Model / Specification
+                <input id="eq-model" type="text" placeholder="모델명 또는 사양">
+              </label>
+
+              <label>
+                Quantity
+                <input id="eq-quantity" type="number" min="0" value="1">
+              </label>
+
+              <label>
+                Status
+                <select id="eq-status">
+                  <option value="active">Active (사용중)</option>
+                  <option value="maintenance">Maintenance (유지보수)</option>
+                  <option value="inactive">Inactive (미사용)</option>
+                  <option value="faulty">Faulty (고장)</option>
+                </select>
+              </label>
+
+              <label>
+                Location / Storage
+                <input id="eq-location" type="text" placeholder="위치 또는 보관장소">
+              </label>
+
+              <label>
+                Notes / Description
+                <textarea id="eq-notes" placeholder="추가 정보 또는 설명"></textarea>
+              </label>
+
+              <label>
+                Equipment Image
+                <input id="eq-image" type="file" accept="image/*">
+              </label>
+
+              <div style="display:flex;gap:8px;margin-top:12px;">
+                <button type="submit" class="btn primary" id="form-submit-btn">Add Equipment</button>
+                <button type="reset" class="btn">Clear</button>
+                <button type="button" class="btn" id="form-cancel-btn" style="display:none;">Cancel</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Right: Equipment List & Search -->
+          <div class="equipment-list-section">
+            <!-- Search & Filter -->
+            <div class="equipment-search-card">
+              <h3>Search & Filter</h3>
+              <input id="eq-search" type="text" placeholder="장비명 또는 모델로 검색...">
+              
+              <div class="filter-group">
+                <label>
+                  <input type="checkbox" id="filter-category" value="all" checked> All Categories
+                </label>
+                <div id="category-filters" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:8px;"></div>
+              </div>
+
+              <div class="filter-group">
+                <label>Status Filter</label>
+                <select id="filter-status">
+                  <option value="">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="maintenance">Maintenance</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="faulty">Faulty</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Equipment List -->
+            <div class="equipment-list-card">
+              <h3>Equipment Inventory</h3>
+              <div id="equipment-list" class="equipment-items"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p>&copy; 2024 NK (KNK) — Advanced Solid State Laser Lab, Hanyang University</p>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+  <script src="equipment.js"></script>
+</body>
+</html>
