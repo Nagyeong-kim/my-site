@@ -90,9 +90,9 @@
     });
   });
 
-  /* IndexedDB 초기화 (데이터 복원) */
+  /* IndexedDB 초기화 */
   async function initializeSampleData(){
-    // Calendar 샘플 데이터
+    // Calendar DB 초기화 (기존 데이터 유지)
     const calendarDB = await new Promise((resolve, reject) => {
       const req = indexedDB.open('calendar-db', 1);
       req.onupgradeneeded = (e) => {
@@ -103,60 +103,7 @@
       req.onerror = () => reject(req.error);
     });
 
-    const calendarStore = calendarDB.transaction('events', 'readwrite').objectStore('events');
-    const existingEvents = await new Promise((resolve) => {
-      const req = calendarStore.getAll();
-      req.onsuccess = () => resolve(req.result);
-    });
-
-    // 기존 데이터가 없으면 샘플 추가
-    if(existingEvents.length === 0){
-      const sampleEvents = [
-        {
-          title: 'Beam Shaping Research',
-          date: '2025-12-15',
-          startDate: '2025-12-15',
-          endDate: '2025-12-17',
-          importance: true,
-          repeat: 'none',
-          groupId: 1
-        },
-        {
-          title: 'Lab Meeting',
-          date: '2025-12-16',
-          startDate: '2025-12-16',
-          endDate: '2025-12-16',
-          importance: false,
-          repeat: 'weekly',
-          repeatEnd: '2025-12-31',
-          groupId: 2
-        },
-        {
-          title: 'Equipment Maintenance',
-          date: '2025-12-20',
-          startDate: '2025-12-20',
-          endDate: '2025-12-20',
-          importance: true,
-          repeat: 'none',
-          groupId: 3
-        },
-        {
-          title: 'Conference Presentation',
-          date: '2025-12-25',
-          startDate: '2025-12-25',
-          endDate: '2025-12-26',
-          importance: true,
-          repeat: 'none',
-          groupId: 4
-        }
-      ];
-
-      sampleEvents.forEach(event => {
-        calendarStore.add(event);
-      });
-    }
-
-    // Equipment 샘플 데이터
+    // Equipment DB 초기화 (기존 데이터 유지)
     const equipmentDB = await new Promise((resolve, reject) => {
       const req = indexedDB.open('equipment-db', 1);
       req.onupgradeneeded = (e) => {
@@ -166,81 +113,6 @@
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
     });
-
-    const equipmentStore = equipmentDB.transaction('equipment', 'readwrite').objectStore('equipment');
-    const existingEquipment = await new Promise((resolve) => {
-      const req = equipmentStore.getAll();
-      req.onsuccess = () => resolve(req.result);
-    });
-
-    // 기존 데이터가 없으면 샘플 추가
-    if(existingEquipment.length === 0){
-      const sampleEquipment = [
-        {
-          name: 'High-Power Fiber Laser',
-          category: 'Laser',
-          model: 'IPG YLS-50000',
-          serial: 'YLS-50K-20250101',
-          quantity: 1,
-          status: 'active',
-          location: 'Lab A',
-          date: '2024-03-15',
-          dateUnknown: false,
-          notes: '50W fiber laser system for beam shaping experiments'
-        },
-        {
-          name: 'Spatial Light Modulator',
-          category: 'Optics',
-          model: 'Thorlabs SLM505',
-          serial: 'SLM-505-001',
-          quantity: 1,
-          status: 'active',
-          location: 'Lab B',
-          date: '2024-06-20',
-          dateUnknown: false,
-          notes: '512x512 pixel phase modulation'
-        },
-        {
-          name: 'Laser Power Meter',
-          category: 'Measurement',
-          model: 'Coherent LaserCheck',
-          serial: 'LC-20250001',
-          quantity: 2,
-          status: 'active',
-          location: 'Lab A',
-          date: '2025-01-10',
-          dateUnknown: false,
-          notes: 'Digital laser power measurement'
-        },
-        {
-          name: 'Optical Bench',
-          category: 'Equipment',
-          model: 'Newport MB4000A',
-          serial: 'MB4K-0552',
-          quantity: 1,
-          status: 'maintenance',
-          location: 'Lab C',
-          date: '2023-11-05',
-          dateUnknown: false,
-          notes: 'Precision optical alignment platform'
-        },
-        {
-          name: 'Dichroic Mirror Set',
-          category: 'Optics',
-          model: 'Various',
-          serial: 'DCM-SET-2024',
-          quantity: 8,
-          status: 'active',
-          location: 'Storage',
-          dateUnknown: true,
-          notes: 'High-power dichroic mirrors for wavelength separation'
-        }
-      ];
-
-      sampleEquipment.forEach(item => {
-        equipmentStore.add(item);
-      });
-    }
   }
 
   // 페이지 로드 시 데이터 초기화
