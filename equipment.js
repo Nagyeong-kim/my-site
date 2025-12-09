@@ -377,9 +377,21 @@
     });
   }
 
-  // Initialize
+  // Initialize (wait for script.js to populate sample data)
   (async function init(){
     await openDB();
+    
+    // Wait a moment to ensure script.js has run first
+    await new Promise(resolve => {
+      if(document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded', () => {
+          setTimeout(resolve, 100);
+        });
+      } else {
+        setTimeout(resolve, 100);
+      }
+    });
+    
     await renderEquipment();
   })();
 
