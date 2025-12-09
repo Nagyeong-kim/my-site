@@ -315,6 +315,13 @@
           const eventText = document.createElement('span');
           eventText.textContent = (event.important ? '★ ' : '') + event.title;
           eventTag.appendChild(eventText);
+          
+          // Add click handler to toggle expanded view
+          eventTag.addEventListener('click', (e) => {
+            e.stopPropagation();
+            eventTag.classList.toggle('expanded');
+          });
+          
           preview.appendChild(eventTag);
         });
 
