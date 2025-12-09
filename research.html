@@ -58,7 +58,17 @@
                   <option value="other">Other</option>
                 </select>
               </label>
-              <label>Role<input id="hist-role" type="text" placeholder="PI / Co-author / Presenter"></label>
+              <label>Role
+                <select id="hist-role">
+                  <option value="">-- Select Role --</option>
+                  <option value="PI">PI (Principal Investigator)</option>
+                  <option value="Co-investigator">Co-investigator</option>
+                  <option value="Co-author">Co-author</option>
+                  <option value="Presenter">Presenter</option>
+                  <option value="Contributor">Contributor</option>
+                  <option value="Other">Other</option>
+                </select>
+              </label>
               <label>Start Date<input id="hist-start" type="date" required></label>
               <label>End Date<input id="hist-end" type="date"></label>
               <label style="display:flex;gap:10px;align-items:center;"><input id="hist-ongoing" type="checkbox"> Ongoing</label>
