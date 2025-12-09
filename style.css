@@ -419,6 +419,13 @@ main {
 .history-list-card { flex:1; }
 .history-list { display:flex; flex-direction:column; gap:12px; }
 .history-card { border-left: 4px solid var(--primary-blue); padding:12px; background:var(--surface-bg); border-radius:6px; }
+.history-card.summary { padding: 10px; margin-bottom: 8px; }
+.history-card.summary .history-card-header { gap: 8px; margin-bottom: 4px; }
+.history-card.summary h4 { margin: 0; font-size: 0.95rem; }
+.history-card.summary .history-meta { font-size: 0.8rem; }
+.history-card.summary .history-body { margin-top: 4px; }
+.history-card.summary .history-desc { margin: 4px 0 0 0; font-size: 0.9rem; line-height: 1.4; }
+.history-card.summary .history-range { margin: 2px 0; font-size: 0.85rem; }
 .history-card-header { display:flex; justify-content:space-between; align-items:center; gap:12px; }
 .history-meta { color:var(--light-text); font-size:0.9rem; }
 .history-body { margin-top:8px; color:var(--medium-text); }

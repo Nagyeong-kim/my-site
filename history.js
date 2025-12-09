@@ -116,13 +116,78 @@
       const editBtn = document.createElement('button'); editBtn.className = 'btn btn-small'; editBtn.textContent = 'Edit';
       editBtn.addEventListener('click', ()=> editItem(item));
       const delBtn = document.createElement('button'); delBtn.className = 'btn btn-small'; delBtn.textContent = 'Delete';
-      delBtn.addEventListener('click', async ()=>{ if(confirm('Delete this activity?')){ await idbDelete(item.id); await renderList(); } });
+      delBtn.addEventListener('click', async ()=>{ if(confirm('Delete this activity?')){ await idbDelete(item.id); await renderList(); await renderSummary(); } });
       const toggleBtn = document.createElement('button'); toggleBtn.className = 'btn btn-small'; toggleBtn.textContent = item.status === 'completed' ? 'Mark Ongoing' : 'Mark Completed';
-      toggleBtn.addEventListener('click', async ()=>{ item.status = item.status === 'completed' ? 'ongoing' : 'completed'; if(item.status === 'completed'){ item.ongoing = false; } await idbPut(item); await renderList(); });
+      toggleBtn.addEventListener('click', async ()=>{ item.status = item.status === 'completed' ? 'ongoing' : 'completed'; if(item.status === 'completed'){ item.ongoing = false; } await idbPut(item); await renderList(); await renderSummary(); });
       actions.appendChild(editBtn); actions.appendChild(delBtn); actions.appendChild(toggleBtn);
 
       card.appendChild(header); card.appendChild(body); card.appendChild(actions);
       listEl.appendChild(card);
+    });
+  }
+
+  // Render summary for homepage (latest 3-5 activities only)
+  async function renderSummary(){
+    const summaryEl = document.getElementById('history-summary');
+    if(!summaryEl) return; // not on homepage
+
+    const all = await idbGetAll();
+    all.sort((a,b)=> (b.start || b.added) > (a.start || a.added) ? 1 : -1);
+    
+    summaryEl.innerHTML = '';
+    if(all.length === 0){
+      summaryEl.innerHTML = '<p class="muted">No activities yet. <a href="research.html">Add one →</a></p>';
+      return;
+    }
+
+    const recent = all.slice(0, 4); // Show latest 4 items
+    
+    recent.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'history-card summary';
+      
+      const header = document.createElement('div');
+      header.className = 'history-card-header';
+      
+      const title = document.createElement('h4');
+      title.textContent = item.title;
+      
+      const meta = document.createElement('div');
+      meta.className = 'history-meta';
+      const who = document.createElement('span');
+      who.className = 'history-who';
+      who.textContent = item.researcher || '';
+      const cat = document.createElement('span');
+      cat.className = 'history-cat';
+      cat.textContent = getCategoryLabel(item.category);
+      
+      meta.appendChild(who);
+      meta.appendChild(document.createTextNode(' · '));
+      meta.appendChild(cat);
+      
+      header.appendChild(title);
+      header.appendChild(meta);
+
+      const body = document.createElement('div');
+      body.className = 'history-body';
+      
+      const range = document.createElement('p');
+      range.className = 'history-range';
+      const start = item.start || '';
+      const end = item.ongoing ? 'Ongoing' : (item.end || '');
+      range.textContent = start ? (end ? `${start} — ${end}` : start) : '';
+      body.appendChild(range);
+      
+      if(item.desc){
+        const desc = document.createElement('p');
+        desc.className = 'history-desc';
+        desc.textContent = item.desc;
+        body.appendChild(desc);
+      }
+
+      card.appendChild(header);
+      card.appendChild(body);
+      summaryEl.appendChild(card);
     });
   }
 
@@ -179,6 +244,7 @@
 
     form.reset(); attachEl.value = '';
     await renderList();
+    await renderSummary();
   });
 
   cancelBtn.addEventListener('click', cancelEdit);
@@ -253,6 +319,7 @@
     await openDB();
     await initializeSampleDataIfEmpty();
     await renderList();
+    await renderSummary();
   })();
 
 })();
