@@ -53,6 +53,7 @@
   const researcherEl = document.getElementById('hist-researcher');
   const categoryEl = document.getElementById('hist-category');
   const roleEl = document.getElementById('hist-role');
+  const parentEl = document.getElementById('hist-parent');
   const startEl = document.getElementById('hist-start');
   const endEl = document.getElementById('hist-end');
   const ongoingEl = document.getElementById('hist-ongoing');
@@ -88,8 +89,21 @@
   async function renderList(){
     if(!listEl) return; // Not on research page
     const all = await idbGetAll();
+    const byId = new Map(all.map(i => [i.id, i]));
     // sort by start date desc
     all.sort((a,b)=> (b.start || b.added) > (a.start || a.added) ? 1 : -1);
+
+    if(parentEl){
+      const currentEditing = editingId;
+      parentEl.innerHTML = '<option value="">No parent (top-level)</option>';
+      all.forEach(item => {
+        if(currentEditing && item.id === currentEditing) return; // prevent self-parenting
+        const opt = document.createElement('option');
+        opt.value = item.id;
+        opt.textContent = `${item.title} (${getCategoryLabel(item.category)})`;
+        parentEl.appendChild(opt);
+      });
+    }
     const text = filterText.toLowerCase();
     const filtered = all.filter(item => {
       if(filterCategory && item.category !== filterCategory) return false;
@@ -120,6 +134,14 @@
       const end = item.ongoing ? 'Ongoing' : (item.end || '');
       range.textContent = start ? (end ? `${start} — ${end}` : start) : '';
       const status = document.createElement('p'); status.className = 'history-status'; status.textContent = `Status: ${item.status || 'ongoing'}`;
+      if(item.parentId){
+        const parent = byId.get(item.parentId);
+        if(parent){
+          const link = document.createElement('p'); link.className = 'history-parent';
+          link.textContent = `Linked to: ${parent.title}`;
+          body.appendChild(link);
+        }
+      }
       const desc = document.createElement('p'); desc.className = 'history-desc'; desc.textContent = item.desc || '';
       body.appendChild(role); body.appendChild(range); body.appendChild(status); if(item.desc) body.appendChild(desc);
 
@@ -214,6 +236,9 @@
     researcherEl.value = item.researcher || '';
     categoryEl.value = item.category || 'research';
     roleEl.value = item.role || '';
+    if(parentEl){
+      parentEl.value = item.parentId || '';
+    }
     startEl.value = item.start || '';
     endEl.value = item.end || '';
     ongoingEl.checked = !!item.ongoing;
@@ -234,6 +259,7 @@
     const researcher = researcherEl.value.trim();
     const category = categoryEl.value;
     const role = roleEl.value.trim();
+    const parentId = parentEl && parentEl.value ? Number(parentEl.value) : null;
     const start = startEl.value;
     const end = endEl.value || null;
     const ongoing = ongoingEl.checked;
@@ -250,13 +276,14 @@
       const item = all.find(i=>i.id===editingId);
       if(item){
         item.title = title; item.researcher = researcher; item.category = category; item.role = role;
+        item.parentId = parentId;
         item.start = start; item.end = end; item.ongoing = ongoing; item.status = status; item.desc = desc;
         if(attachData) item.attach = attachData;
         await idbPut(item);
       }
       cancelEdit();
     } else {
-      const newItem = { title, researcher, category, role, start, end, ongoing, status, desc, attach: attachData, added: Date.now() };
+      const newItem = { title, researcher, category, role, parentId, start, end, ongoing, status, desc, attach: attachData, added: Date.now() };
       await idbPut(newItem);
     }
 

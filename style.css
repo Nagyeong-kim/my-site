@@ -429,6 +429,7 @@ main {
 .history-card-header { display:flex; justify-content:space-between; align-items:center; gap:12px; }
 .history-meta { color:var(--light-text); font-size:0.9rem; }
 .history-body { margin-top:8px; color:var(--medium-text); }
+.history-parent { font-size: 0.9rem; color: var(--dark-text); font-weight: 600; }
 .history-actions { display:flex; gap:8px; margin-top:8px; }
 .history-attach a { color:var(--primary-blue); text-decoration:underline; }
 
