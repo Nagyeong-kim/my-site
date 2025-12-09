@@ -79,6 +79,7 @@
   }
 
   async function renderList(){
+    if(!listEl) return; // Not on research page
     const all = await idbGetAll();
     // sort by start date desc
     all.sort((a,b)=> (b.start || b.added) > (a.start || a.added) ? 1 : -1);
@@ -210,7 +211,8 @@
 
   function cancelEdit(){ editingId = null; form.reset(); formTitleEl.textContent = 'Add Activity'; submitBtn.textContent = 'Add'; cancelBtn.style.display = 'none'; }
 
-  form.addEventListener('submit', async (ev)=>{
+  if(form){
+    form.addEventListener('submit', async (ev)=>{
     ev.preventDefault();
     const title = titleEl.value.trim(); if(!title) return alert('Title required');
     const researcher = researcherEl.value.trim();
@@ -245,9 +247,12 @@
     form.reset(); attachEl.value = '';
     await renderList();
     await renderSummary();
-  });
+    });
+  }
 
-  cancelBtn.addEventListener('click', cancelEdit);
+  if(cancelBtn){
+    cancelBtn.addEventListener('click', cancelEdit);
+  }
 
   // Initialize sample data if empty
   async function initializeSampleDataIfEmpty(){
