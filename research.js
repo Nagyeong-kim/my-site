@@ -60,6 +60,7 @@
   let currentIndex = [];
 
   function renderFileList(files){
+    if(!fileList) return; // Guard: element doesn't exist
     fileList.innerHTML = '';
     if(files.length === 0){
       fileList.innerHTML = '<p class="muted">No uploaded files yet.</p>';
@@ -254,6 +255,7 @@
 
   // init
   (async function init(){
+    if(!fileList) return; // Guard: research.html doesn't have file management UI
     await openDB();
     const fs = await idbGetAll('files');
     renderFileList(fs);
