@@ -8,6 +8,7 @@
   const AUTH_KEY = 'lab-auth-token';
   const AUTH_EMAIL_KEY = 'lab-auth-email';
   const APPROVED_EMAILS_KEY = 'lab-approved-emails';
+  const ADMIN_EMAIL = 'knk6103@gmail.com';
   let currentUser = null;
 
   // Initialize approved emails from localStorage (admin sets these)
@@ -94,6 +95,11 @@
     }
   }
 
+  function isAdminUser(){
+    const user = getCurrentUser();
+    return user && user.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  }
+
   function requireAuth(){
     if(!isAuthenticated()){
       showLoginModal();
@@ -143,6 +149,23 @@
 
     if(signInBtn) signInBtn.addEventListener('click', showLoginModal);
     if(signOutBtn) signOutBtn.addEventListener('click', logout);
+
+    // Dynamically inject Settings nav only for admin email
+    const navLists = document.querySelectorAll('.main-nav ul');
+    navLists.forEach(list => {
+      if(!isAdminUser()) return; // non-admin gets nothing
+      // Avoid duplicates if already inserted
+      const existing = list.querySelector('.nav-settings-link');
+      if(existing) return;
+      const li = document.createElement('li');
+      li.className = 'nav-settings-item';
+      const a = document.createElement('a');
+      a.href = 'settings.html';
+      a.className = 'nav-link nav-settings-link';
+      a.textContent = 'Settings';
+      li.appendChild(a);
+      list.insertBefore(li, list.lastElementChild); // before Contact if present
+    });
   });
 
   // Expose to global
@@ -154,6 +177,7 @@
     requireAuth,
     getApprovedEmails,
     setApprovedEmails,
-    updateAuthUI
+    updateAuthUI,
+    isAdminUser
   };
 })();

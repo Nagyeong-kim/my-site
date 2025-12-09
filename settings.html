@@ -22,7 +22,6 @@
           <li><a href="research.html" class="nav-link">Research</a></li>
           <li><a href="calendar.html" class="nav-link">Calendar</a></li>
           <li><a href="equipment.html" class="nav-link">Equipment</a></li>
-          <li><a href="settings.html" class="nav-link">Settings</a></li>
           <li><a href="index.html#contact" class="nav-link">Contact</a></li>
         </ul>
       </nav>
@@ -76,12 +75,17 @@
   <script src="script.js" defer></script>
   <script src="admin.js" defer></script>
   <script>
-    // Guard content: only show to authenticated users
+    // Guard content: only show to authenticated admins
     window.addEventListener('DOMContentLoaded', ()=>{
       const main = document.querySelector('main');
       if(!window.labAuth.isAuthenticated()){
-        main.style.display = 'none';
+        if(main) main.style.display = 'none';
         window.labAuth.requireAuth();
+        return;
+      }
+      if(!window.labAuth.isAdminUser()){
+        if(main) main.style.display = 'none';
+        window.location.href = 'index.html';
       }
     });
   </script>

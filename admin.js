@@ -7,7 +7,7 @@
 
   window.addEventListener('DOMContentLoaded', ()=>{
     const adminSection = document.querySelector('.admin-section');
-    const currentUser = window.labAuth.getCurrentUser();
+    const currentUser = (window.labAuth.getCurrentUser() || '').toLowerCase();
 
     // Hide admin section if not admin email
     if(currentUser !== ADMIN_EMAIL.toLowerCase()){
