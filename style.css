@@ -163,12 +163,6 @@ body {
   width: 100%;
 }
 
-/* Hide Settings nav by default; shown via JS only for admin */
-.nav-settings-item,
-.nav-settings-link {
-  display: none !important;
-}
-
 /* 다크모드 토글 버튼 - 프리미엄 스타일 */
 .theme-toggle {
   position: relative;
