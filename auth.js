@@ -90,11 +90,18 @@
     const signInEl = document.getElementById('auth-signin-container');
     const signOutEl = document.getElementById('auth-signout-btn');
 
+    console.log('updateAuthUI called - isAuth:', isAuthenticated(), 'elements:', {statusEl, signInEl, signOutEl});
+
     if(isAuthenticated()){
       const user = getCurrentUser();
       if(statusEl) statusEl.textContent = user;
       if(signInEl) signInEl.style.display = 'none';
-      if(signOutEl) signOutEl.style.display = 'inline-block';
+      if(signOutEl) {
+        signOutEl.style.display = 'inline-block';
+        console.log('Sign out button shown');
+      } else {
+        console.error('Sign out button element not found!');
+      }
     } else {
       if(statusEl) statusEl.textContent = '';
       if(signInEl) signInEl.style.display = 'block';
