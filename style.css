@@ -413,11 +413,11 @@ main {
 .event-item .event-meta { color: var(--medium-text); font-size:0.9rem; margin-bottom:6px; }
 
 /* History / Activities styles */
-.history-layout { display:flex; gap:24px; align-items:flex-start; }
-.history-form-card, .history-list-card { background: var(--light-bg); border:1px solid var(--border-color); border-radius:var(--radius); padding:20px; }
-.history-form-card { width:360px; }
-.history-list-card { flex:1; }
-.history-list { display:flex; flex-direction:column; gap:12px; }
+.history-layout { display: grid; grid-template-columns: 1fr minmax(300px, 380px); gap: 24px; align-items: start; max-width: 1400px; }
+.history-form-card, .history-list-card { background: var(--light-bg); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 2px 12px rgba(11, 95, 165, 0.08); transition: box-shadow 0.3s ease; }
+.history-form-card:hover, .history-list-card:hover { box-shadow: 0 6px 20px rgba(11, 95, 165, 0.12); }
+.history-form-card h3, .history-list-card h3 { margin: 0 0 16px 0; font-size: 1.15rem; font-weight: 700; background: linear-gradient(135deg, var(--primary-blue), var(--accent-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; padding-bottom: 8px; border-bottom: 2px solid var(--border-color); }
+.history-list { display: flex; flex-direction: column; gap: 12px; max-height: 600px; overflow-y: auto; }
 .history-card { border-left: 4px solid var(--primary-blue); padding:12px; background:var(--surface-bg); border-radius:6px; }
 .history-card.summary { padding: 10px; margin-bottom: 8px; }
 .history-card.summary .history-card-header { gap: 8px; margin-bottom: 4px; }
@@ -431,6 +431,47 @@ main {
 .history-body { margin-top:8px; color:var(--medium-text); }
 .history-actions { display:flex; gap:8px; margin-top:8px; }
 .history-attach a { color:var(--primary-blue); text-decoration:underline; }
+
+/* History form styling */
+.history-form-card label {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--dark-text);
+}
+
+.history-form-card input, .history-form-card textarea, .history-form-card select {
+  width: 100%;
+  padding: 10px 12px;
+  margin-top: 6px;
+  border-radius: 8px;
+  border: 1.5px solid var(--border-color);
+  background: var(--surface-bg);
+  color: var(--dark-text);
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.history-form-card input:focus, .history-form-card textarea:focus, .history-form-card select:focus {
+  outline: none;
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(11, 95, 165, 0.1);
+}
+
+.history-form-card textarea {
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+}
+
+.history-form-card .form-button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
 
 /* Timeline filter buttons */
 .timeline-filter-btn:hover {
@@ -1157,6 +1198,11 @@ main {
 
 @media (max-width: 1024px) {
   .calendar-layout {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .history-layout {
     grid-template-columns: 1fr;
     gap: 32px;
   }
