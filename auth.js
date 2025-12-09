@@ -170,7 +170,7 @@
       a.className = 'nav-link nav-settings-link';
       a.textContent = 'Settings';
       li.appendChild(a);
-      list.insertBefore(li, list.lastElementChild); // before Contact if present
+      list.appendChild(li); // Add at the end
     });
   });
 
