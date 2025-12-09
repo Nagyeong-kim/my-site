@@ -70,10 +70,16 @@
   const exportBtn = document.getElementById('history-export-btn');
   const importBtn = document.getElementById('history-import-btn');
   const importFileEl = document.getElementById('history-import-file');
+  const authStatusEl = document.getElementById('auth-status');
+  const authSignInBtn = document.getElementById('auth-signin-btn');
+  const authSignOutBtn = document.getElementById('auth-signout-btn');
 
   let filterText = '';
   let filterCategory = '';
   let filterStatus = '';
+  let canWrite = false;
+  const WRITE_PASSPHRASE = (window.WRITE_PASSPHRASE || '').trim();
+  const WRITE_KEY = 'history-write-enabled';
 
   function getCategoryLabel(k){
     const map = { research: 'Research', presentation: 'Presentation', paper: 'Paper', patent: 'Patent', other: 'Other' };
@@ -87,6 +93,52 @@
       r.onerror = reject;
       r.readAsDataURL(file);
     });
+  }
+
+  function updateAuthUI(){
+    if(authStatusEl){ authStatusEl.textContent = canWrite ? 'Write enabled' : 'Read-only'; }
+    if(authSignInBtn){ authSignInBtn.style.display = canWrite ? 'none' : 'inline-block'; }
+    if(authSignOutBtn){ authSignOutBtn.style.display = canWrite ? 'inline-block' : 'none'; }
+    applyFormLock();
+  }
+
+  function applyFormLock(){
+    if(!form) return;
+    const controls = form.querySelectorAll('input, textarea, select, button');
+    controls.forEach(el => {
+      // Keep cancel button hidden logic elsewhere; here we just disable/enable
+      const isInteractive = true;
+      el.disabled = !canWrite && isInteractive;
+    });
+  }
+
+  function setWrite(flag){
+    canWrite = !!flag;
+    try { localStorage.setItem(WRITE_KEY, canWrite ? '1' : '0'); } catch(_){}
+    updateAuthUI();
+  }
+
+  function handleSignIn(){
+    if(!WRITE_PASSPHRASE){
+      // No passphrase set; allow enabling with warning
+      alert('패스프레이즈가 설정되지 않아 바로 쓰기 권한을 켭니다. 보안을 원하면 research.html에서 window.WRITE_PASSPHRASE를 설정하세요.');
+      setWrite(true);
+      renderList();
+      return;
+    }
+    const input = prompt('Enter passphrase');
+    if(input === null) return;
+    if(input.trim() === WRITE_PASSPHRASE){
+      setWrite(true);
+      renderList();
+    } else {
+      alert('패스프레이즈가 올바르지 않습니다.');
+    }
+  }
+
+  function handleSignOut(){
+    setWrite(false);
+    renderList();
   }
 
   async function renderList(){
@@ -161,6 +213,13 @@
       delBtn.addEventListener('click', async ()=>{ if(confirm('Delete this activity?')){ await idbDelete(item.id); await renderList(); await renderSummary(); } });
       const toggleBtn = document.createElement('button'); toggleBtn.className = 'btn btn-small'; toggleBtn.textContent = item.status === 'completed' ? 'Mark Ongoing' : 'Mark Completed';
       toggleBtn.addEventListener('click', async ()=>{ item.status = item.status === 'completed' ? 'ongoing' : 'completed'; if(item.status === 'completed'){ item.ongoing = false; } await idbPut(item); await renderList(); await renderSummary(); });
+
+      if(!canWrite){
+        editBtn.disabled = true; editBtn.title = 'Sign in to edit';
+        delBtn.disabled = true; delBtn.title = 'Sign in to delete';
+        toggleBtn.disabled = true; toggleBtn.title = 'Sign in to update status';
+      }
+
       actions.appendChild(editBtn); actions.appendChild(delBtn); actions.appendChild(toggleBtn);
 
       card.appendChild(header); card.appendChild(body); card.appendChild(actions);
@@ -258,6 +317,7 @@
   if(form){
     form.addEventListener('submit', async (ev)=>{
     ev.preventDefault();
+    if(!canWrite) return alert('Sign in to add or edit.');
     const title = titleEl.value.trim(); if(!title) return alert('Title required');
     const researcher = researcherEl.value.trim();
     const category = categoryEl.value;
@@ -367,6 +427,9 @@
     });
   }
 
+  if(authSignInBtn){ authSignInBtn.addEventListener('click', handleSignIn); }
+  if(authSignOutBtn){ authSignOutBtn.addEventListener('click', handleSignOut); }
+
   if(searchEl){
     searchEl.addEventListener('input', ()=>{ filterText = searchEl.value.trim(); renderList(); });
   }
@@ -445,6 +508,8 @@
   // init
   (async function init(){
     await openDB();
+    try { canWrite = localStorage.getItem(WRITE_KEY) === '1'; } catch(_) { canWrite = false; }
+    updateAuthUI();
     await initializeSampleDataIfEmpty();
     await renderList();
     await renderSummary();

@@ -42,6 +42,14 @@
       <div class="container">
         <h2 id="research-title">Research Activities & Timeline</h2>
 
+        <div class="auth-bar" aria-label="쓰기 권한 제어">
+          <span id="auth-status" class="auth-status">Read-only</span>
+          <div class="auth-actions">
+            <button type="button" class="btn" id="auth-signin-btn">Sign in</button>
+            <button type="button" class="btn" id="auth-signout-btn" style="display:none;">Sign out</button>
+          </div>
+        </div>
+
         <!-- Activities section -->
         <div class="history-layout" style="margin-top:24px;">
           <div class="history-form-card">
@@ -136,6 +144,11 @@
   <script src="script.js" defer></script>
   <script src="research.js" defer></script>
   <script src="history.js" defer></script>
+  <script>
+    // 임시 패스프레이즈를 여기서 설정하세요. 공개 코드라 보안용이 아니며, 단순 보호용입니다.
+    // 예: window.WRITE_PASSPHRASE = 'lab-note-2025';
+    window.WRITE_PASSPHRASE = '';
+  </script>
   <script>
     // No tab switching — combined view. Keep research and history scripts loaded.
   </script>
