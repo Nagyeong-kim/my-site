@@ -185,6 +185,14 @@
     if(signOutBtn) signOutBtn.addEventListener('click', logout);
   });
 
+  // Update auth UI when page becomes visible (switching tabs)
+  document.addEventListener('visibilitychange', ()=>{
+    if(!document.hidden){
+      updateAuthUI();
+      updateSettingsNav();
+    }
+  });
+
   // Initialize UI immediately for pages that load auth.js synchronously
   try {
     currentUser = getCurrentUser();
