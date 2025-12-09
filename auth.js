@@ -185,6 +185,11 @@
     if(signOutBtn) signOutBtn.addEventListener('click', logout);
   });
 
+  // Initialize UI immediately for pages that load auth.js synchronously
+  currentUser = getCurrentUser();
+  updateAuthUI();
+  updateSettingsNav();
+
   // Expose to global
   window.labAuth = {
     isAuthenticated,
