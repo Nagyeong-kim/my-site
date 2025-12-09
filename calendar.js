@@ -27,6 +27,11 @@
   }
 
   function idbPut(value){
+    // Check authentication before writing
+    if(!window.labAuth || !window.labAuth.isAuthenticated()){
+      alert('로그인이 필요합니다.');
+      return Promise.reject('Not authenticated');
+    }
     return new Promise((resolve,reject)=>{
       const tx = db.transaction('events', 'readwrite');
       const store = tx.objectStore('events');
@@ -47,6 +52,11 @@
   }
 
   function idbDelete(id){
+    // Check authentication before writing
+    if(!window.labAuth || !window.labAuth.isAuthenticated()){
+      alert('로그인이 필요합니다.');
+      return Promise.reject('Not authenticated');
+    }
     return new Promise((resolve,reject)=>{
       const tx = db.transaction('events', 'readwrite');
       const store = tx.objectStore('events');

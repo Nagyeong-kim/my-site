@@ -167,7 +167,16 @@
     </div>
   </footer>
 
-  <script src="auth.js" defer></script>
+  <script src="auth.js"></script>
+  <script>
+    // Guard: require authentication to use equipment page
+    document.addEventListener('DOMContentLoaded', ()=>{
+      if(!window.labAuth || !window.labAuth.isAuthenticated()){
+        document.querySelector('main').style.display = 'none';
+        window.labAuth?.requireAuth();
+      }
+    });
+  </script>
   <script src="script.js"></script>
   <script src="equipment.js"></script>
 </body>
