@@ -1,69 +1,92 @@
 /*
   equipment.js — Lab equipment & materials inventory management
-  - Stores equipment data in IndexedDB with images
+  - Stores equipment data in Supabase with images
   - Supports search and filtering
   - Add/Edit/Delete equipment
 */
 
 (function(){
-  const DB_NAME = 'equipment-db';
-  const DB_VERSION = 1;
-  let db = null;
+  const supabase = window.supabaseClient;
   let allEquipment = [];
   let editingId = null;
 
-  function openDB(){
-    return new Promise((resolve, reject) => {
-      const req = indexedDB.open(DB_NAME, DB_VERSION);
-      req.onupgradeneeded = (e) => {
-        const idb = e.target.result;
-        if(!idb.objectStoreNames.contains('equipment')) {
-          idb.createObjectStore('equipment', {keyPath: 'id', autoIncrement: true});
-        }
+  if(!supabase){
+    console.error('Supabase client missing');
+    return;
+  }
+
+  async function saveEquipment(eq){
+    if(!window.labAuth || !window.labAuth.isAuthenticated()){
+      alert('로그인이 필요합니다.');
+      throw new Error('Not authenticated');
+    }
+    const user = window.labAuth.getCurrentUser();
+    const row = {
+      name: eq.name,
+      category: eq.category,
+      status: eq.status || 'available',
+      location: eq.location || null,
+      notes: JSON.stringify({
+        model: eq.model,
+        serial: eq.serial,
+        date: eq.date,
+        dateUnknown: eq.dateUnknown,
+        quantity: eq.quantity,
+        image: eq.image
+      }),
+      created_by: user
+    };
+    if(eq.id){
+      const { data, error } = await supabase.from('equipment').update(row).eq('id', eq.id).select();
+      if(error) throw error;
+      return data[0];
+    } else {
+      const { data, error } = await supabase.from('equipment').insert(row).select();
+      if(error) throw error;
+      return data[0];
+    }
+  }
+
+  async function getAllEquipment(){
+    const { data, error } = await supabase.from('equipment').select('*').order('created_at', { ascending: false });
+    if(error){
+      console.error('Failed to fetch equipment', error);
+      return [];
+    }
+    return (data || []).map(row => {
+      let notes = {}, model = '', serial = '', date = null, dateUnknown = false, quantity = 1, image = null;
+      try {
+        const parsed = JSON.parse(row.notes || '{}');
+        model = parsed.model || '';
+        serial = parsed.serial || '';
+        date = parsed.date || null;
+        dateUnknown = parsed.dateUnknown || false;
+        quantity = parsed.quantity || 1;
+        image = parsed.image || null;
+      } catch(_) {}
+      return {
+        id: row.id,
+        name: row.name,
+        category: row.category,
+        status: row.status,
+        location: row.location,
+        model,
+        serial,
+        date,
+        dateUnknown,
+        quantity,
+        image
       };
-      req.onsuccess = () => { db = req.result; resolve(db); };
-      req.onerror = () => reject(req.error);
     });
   }
 
-  function idbPut(value){
-    // Check authentication before writing
+  async function deleteEquipment(id){
     if(!window.labAuth || !window.labAuth.isAuthenticated()){
       alert('로그인이 필요합니다.');
-      return Promise.reject('Not authenticated');
+      throw new Error('Not authenticated');
     }
-    return new Promise((resolve,reject)=>{
-      const tx = db.transaction('equipment', 'readwrite');
-      const store = tx.objectStore('equipment');
-      const r = value.id ? store.put(value) : store.add(value);
-      r.onsuccess = () => resolve(r.result);
-      r.onerror = () => reject(r.error);
-    });
-  }
-
-  function idbGetAll(){
-    return new Promise((resolve,reject)=>{
-      const tx = db.transaction('equipment', 'readonly');
-      const store = tx.objectStore('equipment');
-      const r = store.getAll();
-      r.onsuccess = () => resolve(r.result || []);
-      r.onerror = () => reject(r.error);
-    });
-  }
-
-  function idbDelete(id){
-    // Check authentication before writing
-    if(!window.labAuth || !window.labAuth.isAuthenticated()){
-      alert('로그인이 필요합니다.');
-      return Promise.reject('Not authenticated');
-    }
-    return new Promise((resolve,reject)=>{
-      const tx = db.transaction('equipment', 'readwrite');
-      const store = tx.objectStore('equipment');
-      const r = store.delete(id);
-      r.onsuccess = () => resolve();
-      r.onerror = () => reject(r.error);
-    });
+    const { error } = await supabase.from('equipment').delete().eq('id', id);
+    if(error) throw error;
   }
 
   // UI elements
@@ -121,7 +144,7 @@
   }
 
   async function renderEquipment(filter = {}){
-    allEquipment = await idbGetAll();
+    allEquipment = await getAllEquipment();
     let filtered = allEquipment;
 
     // Search filter
@@ -260,7 +283,7 @@
           deleteBtn.textContent = 'Delete';
           deleteBtn.addEventListener('click', async () => {
             if(confirm('Delete this equipment?')){
-              await idbDelete(eq.id);
+              await deleteEquipment(eq.id);
               await renderEquipment(filter);
             }
           });
@@ -331,7 +354,7 @@
         eq.dateUnknown = !!dateUnknownEl.checked;
         eq.notes = notesEl.value;
         if(imageData) eq.image = imageData;
-        await idbPut(eq);
+        await saveEquipment(eq);
       }
       cancelEdit();
     } else {
@@ -347,10 +370,9 @@
         status: statusEl.value,
         location: locationEl.value,
         notes: notesEl.value,
-        image: imageData,
-        added: Date.now()
+        image: imageData
       };
-      await idbPut(newEq);
+      await saveEquipment(newEq);
     }
 
     form.reset();
@@ -387,32 +409,8 @@
     });
   }
 
-  // Clean up old sample equipment once (only when logged in)
-  async function purgeSampleEquipmentOnce(){
-    if(!window.labAuth || !window.labAuth.isAuthenticated()) return;
-    const flagKey = 'equipment-sample-purged';
-    try { if(localStorage.getItem(flagKey) === '1') return; } catch(_) {}
-
-    const sampleNames = [
-      'High-Power Fiber Laser',
-      'Spatial Light Modulator',
-      'Laser Power Meter',
-      'Optical Bench',
-      'Dichroic Mirror Set'
-    ];
-    const all = await idbGetAll();
-    for(const item of all){
-      if(item.name && sampleNames.includes(item.name)){
-        try { await idbDelete(item.id); } catch(_) {}
-      }
-    }
-    try { localStorage.setItem(flagKey, '1'); } catch(_) {}
-  }
-
   // Initialize
   (async function init(){
-    await openDB();
-    await purgeSampleEquipmentOnce();
     await renderEquipment();
   })();
 

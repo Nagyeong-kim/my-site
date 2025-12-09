@@ -5,7 +5,7 @@
   const MASTER_PASSPHRASE = 'my-lab-2025';
   const ADMIN_EMAIL = 'knk6103@gmail.com'; // Only this email can manage admins
 
-  window.addEventListener('DOMContentLoaded', ()=>{
+  window.addEventListener('DOMContentLoaded', async ()=>{
     const adminSection = document.querySelector('.admin-section');
     const currentUser = (window.labAuth.getCurrentUser() || '').toLowerCase();
 
@@ -42,8 +42,8 @@
       emailsEl.placeholder = 'one@example.com\ntwo@example.com';
     }
 
-    function loadEmails(){
-      const current = window.labAuth.getApprovedEmails();
+    async function loadEmails(){
+      const current = await window.labAuth.getApprovedEmails();
       emailsEl.value = current.join('\n');
     }
 
@@ -54,14 +54,14 @@
       verifyBtn.type = 'button';
       verifyBtn.className = 'btn';
       verifyBtn.textContent = 'Unlock Admin';
-      verifyBtn.addEventListener('click', ()=>{
+      verifyBtn.addEventListener('click', async ()=>{
         const pass = prompt('Master Passphrase:');
         if(pass === null) return;
         if(pass === MASTER_PASSPHRASE){
           try { sessionStorage.setItem('admin-verified', '1'); } catch(_) {}
           isAdminVerified = true;
           unlockAdmin();
-          loadEmails();
+          await loadEmails();
           verifyBtn.style.display = 'none';
         } else {
           alert('패스프레이즈가 올바르지 않습니다.');
@@ -70,14 +70,57 @@
       saveBtnEl.parentNode.insertBefore(verifyBtn, saveBtnEl);
     } else {
       unlockAdmin();
-      loadEmails();
+      await loadEmails();
     }
 
-    saveBtnEl.addEventListener('click', ()=>{
+    saveBtnEl.addEventListener('click', async ()=>{
       if(!isAdminVerified) return alert('Admin verification required');
-      const lines = emailsEl.value.trim().split('\n').map(l => l.trim().toLowerCase()).filter(l => l);
-      window.labAuth.setApprovedEmails(lines);
-      alert(`${lines.length}개의 이메일이 저장되었습니다.`);
+      
+      const lines = emailsEl.value.trim().split('\n')
+        .map(l => l.trim().toLowerCase())
+        .filter(l => l && l.includes('@'));
+      
+      console.log('저장할 이메일:', lines);
+      
+      if(lines.length === 0){
+        alert('최소 1개 이상의 유효한 이메일을 입력하세요.');
+        return;
+      }
+      
+      saveBtnEl.disabled = true;
+      saveBtnEl.textContent = '저장 중...';
+      
+      try {
+        await window.labAuth.setApprovedEmails(lines);
+        alert(`${lines.length}개의 이메일이 저장되었습니다.`);
+        await loadEmails(); // 저장 후 다시 로드
+        saveBtnEl.textContent = 'Save';
+      } catch(err) {
+        console.error('Failed to save approved emails', err);
+        alert('저장에 실패했습니다. 콘솔을 확인하세요.\n' + err.message);
+        saveBtnEl.textContent = 'Save';
+      } finally {
+        saveBtnEl.disabled = false;
+      }
     });
+
+    // Poll approved_emails every 2 seconds (polling 방식)
+    if(isAdminVerified){
+      setInterval(async () => {
+        try {
+          if(typeof loadEmails === 'function'){
+            const current = await window.labAuth.getApprovedEmails();
+            const currentText = current.join('\n');
+            // 텍스트가 변경되었으면 갱신
+            if(emailsEl.value !== currentText){
+              emailsEl.value = currentText;
+              console.log('이메일 목록 자동 갱신됨');
+            }
+          }
+        } catch(err) {
+          console.error('Failed to load emails in polling', err);
+        }
+      }, 2000);
+    }
   });
 })();

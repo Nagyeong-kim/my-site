@@ -1,88 +1,100 @@
-/* auth.js — Global authentication for site access
-   - Email whitelist validation
-   - SessionStorage token management
+/* auth.js — Global authentication via Supabase
+   - Email whitelist validation against Supabase table `approved_emails`
+   - Supabase Auth (magic link)
    - Applies to all pages
 */
 
 (function(){
-  const AUTH_KEY = 'lab-auth-token';
-  const AUTH_EMAIL_KEY = 'lab-auth-email';
-  const APPROVED_EMAILS_KEY = 'lab-approved-emails';
   const ADMIN_EMAIL = 'knk6103@gmail.com';
-  let currentUser = null;
+  const supabase = window.supabaseClient;
+  let currentUser = null; // lowercased email
+  let currentSession = null;
 
-  // Initialize approved emails from localStorage (admin sets these)
-  function getApprovedEmails(){
+  if(!supabase){
+    console.error('Supabase client missing. Ensure supabase.js is loaded before auth.js');
+    return;
+  }
+
+  async function fetchApprovedEmails(){
+    const { data, error } = await supabase.from('approved_emails').select('email');
+    if(error){
+      console.error('Failed to fetch approved emails', error);
+      return [];
+    }
+    return (data || []).map(r => (r.email || '').toLowerCase()).filter(Boolean);
+  }
+
+  async function setApprovedEmails(emails){
+    // 간단한 방식: 기존 이메일 모두 삭제 후 새로 추가
+    const unique = Array.from(new Set((emails || []).map(e => e.toLowerCase()).filter(Boolean)));
+    console.log('Setting approved emails to:', unique);
+    
     try {
-      const stored = localStorage.getItem(APPROVED_EMAILS_KEY);
-      if(!stored){
-        // Initialize with admin email on first run
-        const defaultEmails = [ADMIN_EMAIL.toLowerCase()];
-        localStorage.setItem(APPROVED_EMAILS_KEY, JSON.stringify(defaultEmails));
-        return defaultEmails;
+      // 1. 모든 행 삭제
+      await supabase.from('approved_emails').delete().gt('id', -1);
+      console.log('삭제 완료');
+      
+      // 2. 새로운 이메일 추가
+      if(unique.length > 0) {
+        const { data, error } = await supabase.from('approved_emails').insert(
+          unique.map(e => ({ email: e }))
+        ).select();
+        
+        if(error) throw error;
+        console.log('추가 완료:', data);
       }
-      return JSON.parse(stored);
-    } catch(_) {
-      return [ADMIN_EMAIL.toLowerCase()];
+    } catch(err) {
+      console.error('setApprovedEmails error:', err);
+      throw err;
     }
   }
 
-  function setApprovedEmails(emails){
-    try {
-      localStorage.setItem(APPROVED_EMAILS_KEY, JSON.stringify(emails || []));
-    } catch(_) {}
+  async function isEmailApproved(email){
+    const target = (email || '').toLowerCase();
+    if(!target) return false;
+    const { data, error } = await supabase
+      .from('approved_emails')
+      .select('email')
+      .eq('email', target)
+      .limit(1)
+      .maybeSingle();
+    if(error && error.code !== 'PGRST116'){ // PGRST116: no rows
+      console.error('approve check failed', error);
+      return false;
+    }
+    return !!data;
   }
 
   function isAuthenticated(){
-    try {
-      const token = sessionStorage.getItem(AUTH_KEY);
-      const email = sessionStorage.getItem(AUTH_EMAIL_KEY);
-      return token && email;
-    } catch(_) {
-      return false;
-    }
+    return !!currentUser;
   }
 
   function getCurrentUser(){
-    try {
-      const email = sessionStorage.getItem(AUTH_EMAIL_KEY);
-      return email || null;
-    } catch(_) {
-      return null;
-    }
+    return currentUser;
   }
 
-  function login(email){
+  async function login(email){
     email = (email || '').trim().toLowerCase();
-    if(!email) return false;
-    
-    const approved = getApprovedEmails();
-    if(!approved.includes(email)){
-      alert('승인되지 않은 이메일입니다.');
+    if(!email){
+      alert('이메일을 입력하세요');
       return false;
     }
-
-    try {
-      const token = 'token-' + Date.now();
-      sessionStorage.setItem(AUTH_KEY, token);
-      sessionStorage.setItem(AUTH_EMAIL_KEY, email);
-      currentUser = email;
-      updateAuthUI();
-      return true;
-    } catch(_) {
-      alert('로그인 저장에 실패했습니다.');
+    // Send magic link
+    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href } });
+    if(error){
+      alert('로그인 요청 실패: ' + error.message);
       return false;
     }
+    alert('로그인 링크를 이메일로 전송했습니다. 메일함을 확인해주세요.');
+    return true;
   }
 
-  function logout(){
-    try {
-      sessionStorage.removeItem(AUTH_KEY);
-      sessionStorage.removeItem(AUTH_EMAIL_KEY);
-      currentUser = null;
-      updateAuthUI();
-      updateSettingsNav();
-    } catch(_) {}
+  async function logout(){
+    await supabase.auth.signOut();
+    currentUser = null;
+    currentSession = null;
+    updateAuthUI();
+    updateSettingsNav();
   }
 
   function updateAuthUI(){
@@ -90,18 +102,11 @@
     const signInEl = document.getElementById('auth-signin-container');
     const signOutEl = document.getElementById('auth-signout-btn');
 
-    console.log('updateAuthUI called - isAuth:', isAuthenticated(), 'elements:', {statusEl, signInEl, signOutEl});
-
     if(isAuthenticated()){
       const user = getCurrentUser();
       if(statusEl) statusEl.textContent = user;
       if(signInEl) signInEl.style.display = 'none';
-      if(signOutEl) {
-        signOutEl.style.display = 'inline-block';
-        console.log('Sign out button shown');
-      } else {
-        console.error('Sign out button element not found!');
-      }
+      if(signOutEl) signOutEl.style.display = 'inline-block';
     } else {
       if(statusEl) statusEl.textContent = '';
       if(signInEl) signInEl.style.display = 'block';
@@ -133,7 +138,7 @@
           <h2>Lab Access</h2>
           <p>승인된 이메일로 접속해주세요.</p>
           <input type="email" id="auth-email-input" placeholder="your.email@example.com" />
-          <button type="button" class="btn primary" id="auth-modal-signin">Sign In</button>
+          <button type="button" class="btn primary" id="auth-modal-signin">Sign In (Email Link)</button>
           <button type="button" class="btn" id="auth-modal-close" style="display:none;">Close</button>
         </div>
       `;
@@ -141,10 +146,9 @@
 
       const emailInput = modal.querySelector('#auth-email-input');
       const signInBtn = modal.querySelector('#auth-modal-signin');
-      signInBtn.addEventListener('click', ()=>{
-        if(login(emailInput.value)){
+      signInBtn.addEventListener('click', async ()=>{
+        if(await login(emailInput.value)){
           modal.style.display = 'none';
-          updateSettingsNav();
         }
       });
       emailInput.addEventListener('keypress', (e)=>{
@@ -158,16 +162,11 @@
     // Dynamically inject Settings nav only for admin email
     const navLists = document.querySelectorAll('.main-nav ul');
     navLists.forEach(list => {
-      // Remove existing first
       const existing = list.querySelector('.nav-settings-link');
       if(existing && existing.parentNode) existing.parentNode.remove();
-      
       const currentEmail = (getCurrentUser() || '').toLowerCase();
       const adminEmail = ADMIN_EMAIL.toLowerCase();
-      
-      // Only add Settings if exact match with admin email
       if(currentEmail !== adminEmail) return;
-      
       const li = document.createElement('li');
       li.className = 'nav-settings-item';
       const a = document.createElement('a');
@@ -175,51 +174,71 @@
       a.className = 'nav-link nav-settings-link';
       a.textContent = 'Settings';
       li.appendChild(a);
-      list.appendChild(li); // Add at the end
+      list.appendChild(li);
     });
   }
 
-  // Wire header auth UI
-  window.addEventListener('DOMContentLoaded', ()=>{
-    currentUser = getCurrentUser();
-    updateAuthUI();
-    updateSettingsNav();
+  async function syncSessionFromSupabase(){
+    const { data, error } = await supabase.auth.getSession();
+    if(error){
+      console.error('getSession error', error);
+      return;
+    }
+    currentSession = data.session;
+    currentUser = (data.session?.user?.email || '').toLowerCase() || null;
+  }
 
+  async function enforceApproval(){
+    if(!currentUser) return;
+    console.log('승인 검증 시작:', currentUser);
+    const ok = await isEmailApproved(currentUser);
+    console.log('승인 결과:', ok);
+    if(!ok){
+      alert('승인되지 않은 이메일입니다. 관리자에게 문의하세요.');
+      console.log('승인 실패 - 로그아웃 시작');
+      await logout();
+    } else {
+      console.log('승인 성공:', currentUser);
+    }
+  }
+
+  function wireAuthButtons(){
     const signInBtn = document.getElementById('auth-signin-btn');
     const signOutBtn = document.getElementById('auth-signout-btn');
-
     if(signInBtn) signInBtn.addEventListener('click', showLoginModal);
     if(signOutBtn) signOutBtn.addEventListener('click', logout);
+  }
+
+  // Auth state change listener
+  supabase.auth.onAuthStateChange(async (_event, session) => {
+    currentSession = session;
+    currentUser = (session?.user?.email || '').toLowerCase() || null;
+    if(currentUser){
+      await enforceApproval();
+    }
+    updateAuthUI();
+    updateSettingsNav();
+  });
+
+  // Wire header auth UI
+  window.addEventListener('DOMContentLoaded', async ()=>{
+    await syncSessionFromSupabase();
+    if(currentUser){
+      await enforceApproval();
+    }
+    updateAuthUI();
+    updateSettingsNav();
+    wireAuthButtons();
   });
 
   // Update auth UI when page becomes visible (switching tabs)
-  document.addEventListener('visibilitychange', ()=>{
+  document.addEventListener('visibilitychange', async ()=>{
     if(!document.hidden){
+      await syncSessionFromSupabase();
       updateAuthUI();
       updateSettingsNav();
     }
   });
-
-  // Initialize UI immediately for pages that load auth.js synchronously
-  try {
-    currentUser = getCurrentUser();
-    updateAuthUI();
-    updateSettingsNav();
-  } catch(e) {
-    console.error('Auth init error:', e);
-  }
-
-  // Also ensure UI is updated shortly after script load
-  // (in case DOM elements aren't ready yet)
-  setTimeout(()=>{
-    try {
-      currentUser = getCurrentUser();
-      updateAuthUI();
-      updateSettingsNav();
-    } catch(e) {
-      console.error('Auth delayed init error:', e);
-    }
-  }, 100);
 
   // Expose to global
   window.labAuth = {
@@ -228,7 +247,7 @@
     login,
     logout,
     requireAuth,
-    getApprovedEmails,
+    getApprovedEmails: fetchApprovedEmails,
     setApprovedEmails,
     updateAuthUI,
     updateSettingsNav,

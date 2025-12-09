@@ -1,69 +1,94 @@
 /*
   calendar.js — Lab calendar management
-  - Stores events in IndexedDB
+  - Stores events in Supabase
   - Renders monthly calendar view
   - Allows add/edit/delete events
 */
 
 (function(){
-  const DB_NAME = 'calendar-db';
-  const DB_VERSION = 1;
-  let db = null;
+  const supabase = window.supabaseClient;
   let currentDate = new Date();
   let selectedDate = null;
 
-  function openDB(){
-    return new Promise((resolve, reject) => {
-      const req = indexedDB.open(DB_NAME, DB_VERSION);
-      req.onupgradeneeded = (e) => {
-        const idb = e.target.result;
-        if(!idb.objectStoreNames.contains('events')) {
-          idb.createObjectStore('events', {keyPath: 'id', autoIncrement: true});
-        }
+  if(!supabase){
+    console.error('Supabase client missing');
+    return;
+  }
+
+  async function saveEvent(event){
+    if(!window.labAuth || !window.labAuth.isAuthenticated()){
+      alert('로그인이 필요합니다.');
+      throw new Error('Not authenticated');
+    }
+    const user = window.labAuth.getCurrentUser();
+    const row = {
+      title: event.title,
+      start_time: new Date(event.startDate + 'T' + (event.time || '00:00')).toISOString(),
+      end_time: new Date(event.endDate + 'T' + (event.time || '23:59')).toISOString(),
+      description: JSON.stringify({
+        desc: event.desc,
+        color: event.color,
+        repeat: event.repeat,
+        repeatEnd: event.repeatEnd,
+        groupId: event.groupId,
+        important: event.important
+      }),
+      created_by: user
+    };
+    if(event.id){
+      const { data, error } = await supabase.from('events').update(row).eq('id', event.id).select();
+      if(error) throw error;
+      return data[0];
+    } else {
+      const { data, error } = await supabase.from('events').insert(row).select();
+      if(error) throw error;
+      return data[0];
+    }
+  }
+
+  async function getAllEvents(){
+    const { data, error } = await supabase.from('events').select('*').order('start_time', { ascending: true });
+    if(error){
+      console.error('Failed to fetch events', error);
+      return [];
+    }
+    return (data || []).map(row => {
+      const start = new Date(row.start_time);
+      const end = new Date(row.end_time);
+      let desc = {}, color = 'blue', repeat = 'none', repeatEnd = null, groupId = null, important = false;
+      try {
+        const parsed = JSON.parse(row.description || '{}');
+        desc = parsed.desc || '';
+        color = parsed.color || 'blue';
+        repeat = parsed.repeat || 'none';
+        repeatEnd = parsed.repeatEnd || null;
+        groupId = parsed.groupId || null;
+        important = parsed.important || false;
+      } catch(_) {}
+      return {
+        id: row.id,
+        title: row.title,
+        startDate: start.toISOString().split('T')[0],
+        endDate: end.toISOString().split('T')[0],
+        time: start.toTimeString().slice(0,5),
+        desc,
+        color,
+        repeat,
+        repeatEnd,
+        groupId,
+        important,
+        date: start.toISOString().split('T')[0]
       };
-      req.onsuccess = () => { db = req.result; resolve(db); };
-      req.onerror = () => reject(req.error);
     });
   }
 
-  function idbPut(value){
-    // Check authentication before writing
+  async function deleteEvent(id){
     if(!window.labAuth || !window.labAuth.isAuthenticated()){
       alert('로그인이 필요합니다.');
-      return Promise.reject('Not authenticated');
+      throw new Error('Not authenticated');
     }
-    return new Promise((resolve,reject)=>{
-      const tx = db.transaction('events', 'readwrite');
-      const store = tx.objectStore('events');
-      const r = value.id ? store.put(value) : store.add(value);
-      r.onsuccess = () => resolve(r.result);
-      r.onerror = () => reject(r.error);
-    });
-  }
-
-  function idbGetAll(){
-    return new Promise((resolve,reject)=>{
-      const tx = db.transaction('events', 'readonly');
-      const store = tx.objectStore('events');
-      const r = store.getAll();
-      r.onsuccess = () => resolve(r.result || []);
-      r.onerror = () => reject(r.error);
-    });
-  }
-
-  function idbDelete(id){
-    // Check authentication before writing
-    if(!window.labAuth || !window.labAuth.isAuthenticated()){
-      alert('로그인이 필요합니다.');
-      return Promise.reject('Not authenticated');
-    }
-    return new Promise((resolve,reject)=>{
-      const tx = db.transaction('events', 'readwrite');
-      const store = tx.objectStore('events');
-      const r = store.delete(id);
-      r.onsuccess = () => resolve();
-      r.onerror = () => reject(r.error);
-    });
+    const { error } = await supabase.from('events').delete().eq('id', id);
+    if(error) throw error;
   }
 
   // UI elements
@@ -160,7 +185,7 @@
   }
 
   async function renderEventsForDate(dateStr){
-    const allEvents = await idbGetAll();
+    const allEvents = await getAllEvents();
     const seen = new Set();
     const dayEvents = [];
 
@@ -207,7 +232,7 @@
       importanceBtn.title = event.important ? 'Remove importance' : 'Mark as important';
       importanceBtn.addEventListener('click', async () => {
         event.important = !event.important;
-        await idbPut(event);
+        await saveEvent(event);
         await renderEventsForDate(dateStr);
         renderCalendarWithEvents();
       });
@@ -247,14 +272,14 @@
       deleteBtn.textContent = 'Delete';
       deleteBtn.addEventListener('click', async () => {
         if(confirm('Delete this event (all occurrences)?')){
-          const all = await idbGetAll();
+          const all = await getAllEvents();
           const gid = event.groupId;
           if(gid){
             for(const it of all){
-              if(it.groupId === gid) await idbDelete(it.id);
+              if(it.groupId === gid) await deleteEvent(it.id);
             }
           } else {
-            await idbDelete(event.id);
+            await deleteEvent(event.id);
           }
           await renderEventsForDate(dateStr);
           renderCalendarWithEvents();
@@ -274,7 +299,7 @@
   }
 
   async function renderCalendarWithEvents(){
-    const allEvents = await idbGetAll();
+    const allEvents = await getAllEvents();
     function inRange(dateStr, startStr, endStr){
       const d = new Date(dateStr + 'T00:00:00');
       const s = new Date((startStr || dateStr) + 'T00:00:00');
@@ -434,7 +459,7 @@
 
     if(editingEventId){
       // Update existing event - delete old repeating events and create new ones
-      const allEvents = await idbGetAll();
+      const allEvents = await getAllEvents();
       // determine groupId of existing
       const baseEventToDelete = allEvents.find(e => e.id === editingEventId);
       const gid = (baseEventToDelete && baseEventToDelete.groupId) || null;
@@ -442,20 +467,20 @@
       
       if(gid){
         for(const evt of allEvents){
-          if(evt.groupId === gid) await idbDelete(evt.id);
+          if(evt.groupId === gid) await deleteEvent(evt.id);
         }
       } else {
-        await idbDelete(editingEventId);
+        await deleteEvent(editingEventId);
       }
 
       const groupId = gid || ('g-' + Date.now() + '-' + Math.floor(Math.random()*10000));
 
       // create instances for updated event (single or repeating)
       if(repeat === 'none' || !repeatEnd){
-        await idbPut({
+        await saveEvent({
           title, startDate, endDate, time, desc, color,
           repeat, repeatEnd: repeatEnd || null,
-          important: baseImportance, added: Date.now(), groupId
+          important: baseImportance, groupId
         });
       } else {
         const s = new Date(startDate);
@@ -465,10 +490,10 @@
           const sStr = cur.toISOString().split('T')[0];
           const eDate = addDays(cur, duration);
           const eStr = eDate.toISOString().split('T')[0];
-          await idbPut({
+          await saveEvent({
             title, startDate: sStr, endDate: eStr, time, desc, color,
             repeat, repeatEnd: repeatEnd || null,
-            important: baseImportance, added: Date.now(), groupId
+            important: baseImportance, groupId
           });
           cur = addDays(cur, getRepeatInterval(repeat));
         }
@@ -479,10 +504,10 @@
       // Add new event(s)
       const groupId = 'g-' + Date.now() + '-' + Math.floor(Math.random()*10000);
       if(repeat === 'none' || !repeatEnd){
-        await idbPut({
+        await saveEvent({
           title, startDate, endDate, time, desc, color,
           repeat, repeatEnd: repeatEnd || null,
-          important: false, added: Date.now(), groupId
+          important: false, groupId
         });
       } else {
         const s = new Date(startDate);
@@ -492,10 +517,10 @@
           const sStr = cur.toISOString().split('T')[0];
           const eDate = addDays(cur, duration);
           const eStr = eDate.toISOString().split('T')[0];
-          await idbPut({
+          await saveEvent({
             title, startDate: sStr, endDate: eStr, time, desc, color,
             repeat, repeatEnd: repeatEnd || null,
-            important: false, added: Date.now(), groupId
+            important: false, groupId
           });
           cur = addDays(cur, getRepeatInterval(repeat));
         }
@@ -529,33 +554,8 @@
     return intervals[repeat] || 0;
   }
 
-  // Clean up old sample events once (only when logged in)
-  async function purgeSampleEventsOnce(){
-    if(!window.labAuth || !window.labAuth.isAuthenticated()) return;
-    const flagKey = 'calendar-sample-purged';
-    try { if(localStorage.getItem(flagKey) === '1') return; } catch(_) {}
-
-    const sampleTitles = [
-      'Weekly Lab Meeting',
-      'Equipment Maintenance',
-      'Research Data Analysis'
-    ];
-    const samplePrefixes = ['g-weekly-','g-maint-','g-data-'];
-    const all = await idbGetAll();
-    for(const ev of all){
-      const byTitle = ev.title && sampleTitles.includes(ev.title);
-      const byGroup = ev.groupId && samplePrefixes.some(p => ev.groupId.startsWith(p));
-      if(byTitle || byGroup){
-        try { await idbDelete(ev.id); } catch(_) {}
-      }
-    }
-    try { localStorage.setItem(flagKey, '1'); } catch(_) {}
-  }
-
   // Initialize
   (async function init(){
-    await openDB();
-    await purgeSampleEventsOnce();
     renderCalendar();
 
     // Select today
