@@ -153,10 +153,16 @@
     // Dynamically inject Settings nav only for admin email
     const navLists = document.querySelectorAll('.main-nav ul');
     navLists.forEach(list => {
-      if(!isAdminUser()) return; // non-admin gets nothing
+      const currentEmail = (getCurrentUser() || '').toLowerCase();
+      const adminEmail = ADMIN_EMAIL.toLowerCase();
+      
+      // Only add Settings if exact match with admin email
+      if(currentEmail !== adminEmail) return;
+      
       // Avoid duplicates if already inserted
       const existing = list.querySelector('.nav-settings-link');
       if(existing) return;
+      
       const li = document.createElement('li');
       li.className = 'nav-settings-item';
       const a = document.createElement('a');
