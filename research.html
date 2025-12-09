@@ -112,6 +112,12 @@
                 <option value="completed">Completed</option>
               </select>
             </div>
+
+            <div class="history-io" aria-label="활동 내보내기 및 가져오기">
+              <button type="button" class="btn" id="history-export-btn">Export JSON</button>
+              <button type="button" class="btn" id="history-import-btn">Import JSON</button>
+              <input type="file" id="history-import-file" accept="application/json" style="display:none;">
+            </div>
             <div id="history-list" class="history-list"></div>
           </div>
         </div>

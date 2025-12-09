@@ -67,6 +67,9 @@
   const searchEl = document.getElementById('history-search');
   const filterCategoryEl = document.getElementById('history-filter-category');
   const filterStatusEl = document.getElementById('history-filter-status');
+  const exportBtn = document.getElementById('history-export-btn');
+  const importBtn = document.getElementById('history-import-btn');
+  const importFileEl = document.getElementById('history-import-file');
 
   let filterText = '';
   let filterCategory = '';
@@ -295,6 +298,73 @@
 
   if(cancelBtn){
     cancelBtn.addEventListener('click', cancelEdit);
+  }
+
+  async function exportData(){
+    const all = await idbGetAll();
+    const blob = new Blob([JSON.stringify({ version: 1, exportedAt: Date.now(), items: all }, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'research-activities.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importData(file){
+    try{
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      const items = Array.isArray(parsed) ? parsed : (parsed.items || []);
+      if(!items.length){ alert('가져올 항목이 없습니다.'); return; }
+
+      const existing = await idbGetAll();
+      const existingKeys = new Set(existing.map(i=>`${(i.title||'').trim().toLowerCase()}|${i.start||''}|${i.category||''}`));
+
+      const mapOldToNew = new Map();
+      const pendingParent = [];
+
+      for(const raw of items){
+        const key = `${(raw.title||'').trim().toLowerCase()}|${raw.start||''}|${raw.category||''}`;
+        const oldId = raw.id;
+        const oldParent = raw.parentId;
+        const { id, parentId, added, ...rest } = raw; // strip id
+        const record = { ...rest, parentId: null, added: Date.now() };
+        if(existingKeys.has(key)) continue;
+        const newId = await idbPut(record);
+        mapOldToNew.set(oldId, newId);
+        if(oldParent) pendingParent.push({ newId, oldParent });
+      }
+
+      for(const p of pendingParent){
+        const mapped = mapOldToNew.get(p.oldParent);
+        if(mapped){
+          const all = await idbGetAll();
+          const item = all.find(i=>i.id===p.newId);
+          if(item){ item.parentId = mapped; await idbPut(item); }
+        }
+      }
+
+      await renderList();
+      await renderSummary();
+      alert('가져오기 완료');
+    } catch(err){
+      console.error(err);
+      alert('가져오기 중 오류가 발생했습니다. 파일을 확인해주세요.');
+    }
+  }
+
+  if(exportBtn){
+    exportBtn.addEventListener('click', exportData);
+  }
+  if(importBtn && importFileEl){
+    importBtn.addEventListener('click', ()=> importFileEl.click());
+    importFileEl.addEventListener('change', async ()=>{
+      if(importFileEl.files && importFileEl.files[0]){
+        await importData(importFileEl.files[0]);
+        importFileEl.value = '';
+      }
+    });
   }
 
   if(searchEl){

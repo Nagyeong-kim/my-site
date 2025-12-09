@@ -1611,6 +1611,13 @@ main {
   box-shadow: 0 0 0 3px rgba(11, 95, 165, 0.1);
 }
 
+.history-io {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
 .equipment-search-card h3 {
   margin: 0 0 16px 0;
   font-size: 1.1rem;
