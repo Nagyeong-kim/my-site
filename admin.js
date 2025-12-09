@@ -3,8 +3,21 @@
 (function(){
   // Set this to your master passphrase (change it!)
   const MASTER_PASSPHRASE = 'my-lab-2025';
+  const ADMIN_EMAIL = 'knk6103@gmail.com'; // Only this email can manage admins
 
   window.addEventListener('DOMContentLoaded', ()=>{
+    const adminSection = document.querySelector('.admin-section');
+    const currentUser = window.labAuth.getCurrentUser();
+
+    // Hide admin section if not admin email
+    if(currentUser !== ADMIN_EMAIL.toLowerCase()){
+      if(adminSection) adminSection.style.display = 'none';
+      return;
+    }
+
+    // Show admin section only for admin email
+    if(adminSection) adminSection.style.display = 'block';
+
     const emailsEl = document.getElementById('admin-emails');
     const saveBtnEl = document.getElementById('admin-save-emails');
 
