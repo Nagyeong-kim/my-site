@@ -171,11 +171,18 @@
   <script src="supabase.js"></script>
   <script src="auth.js"></script>
   <script>
-    // Guard: require authentication to use equipment page
+    // Guard: hide content if not logged in, show if logged in
     document.addEventListener('DOMContentLoaded', ()=>{
-      if(!window.labAuth || !window.labAuth.isAuthenticated()){
-        document.querySelector('main').style.display = 'none';
-        window.labAuth?.requireAuth();
+      const main = document.querySelector('main');
+      if(!window.labAuth){
+        if(main) main.style.display = 'none';
+        return;
+      }
+      if(window.labAuth.isAuthenticated()){
+        if(main) main.style.display = '';
+      } else {
+        if(main) main.style.display = 'none';
+        window.labAuth.requireAuth();
       }
     });
   </script>

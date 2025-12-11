@@ -33,6 +33,8 @@
       currentUser = email;
       updateAuthUI();
       updateSettingsNav();
+      const main = document.querySelector('main');
+      if(main) main.style.display = '';
       alert('로그인되었습니다!');
       return true;
     } catch(err) {
@@ -48,6 +50,8 @@
     currentUser = null;
     updateAuthUI();
     updateSettingsNav();
+    const main = document.querySelector('main');
+    if(main) main.style.display = 'none';
   }
 
   function updateAuthUI(){
@@ -179,6 +183,8 @@
     } catch(_) {}
     updateAuthUI();
     updateSettingsNav();
+    const main = document.querySelector('main');
+    if(main) main.style.display = isAuthenticated() ? '' : 'none';
     wireAuthButtons();
   });
 

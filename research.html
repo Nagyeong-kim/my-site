@@ -148,15 +148,19 @@
     // Require this passphrase for write actions in history.js
     window.WRITE_PASSPHRASE = 'my-lab-write-2025';
     
-    // Guard content: only show to authenticated users
+    // Guard content: show when logged in, hide otherwise
     document.addEventListener('DOMContentLoaded', ()=>{
-      // Ensure auth UI is updated first
       if(window.labAuth) window.labAuth.updateAuthUI();
-      
       const main = document.querySelector('main');
-      if(!window.labAuth || !window.labAuth.isAuthenticated()){
+      if(!window.labAuth){
         if(main) main.style.display = 'none';
-        if(window.labAuth) window.labAuth.requireAuth();
+        return;
+      }
+      if(window.labAuth.isAuthenticated()){
+        if(main) main.style.display = '';
+      } else {
+        if(main) main.style.display = 'none';
+        window.labAuth.requireAuth();
       }
     });
   </script>

@@ -69,6 +69,10 @@
     // Guard content: only show to authenticated admins
     window.addEventListener('DOMContentLoaded', ()=>{
       const main = document.querySelector('main');
+      if(!window.labAuth){
+        if(main) main.style.display = 'none';
+        return;
+      }
       if(!window.labAuth.isAuthenticated()){
         if(main) main.style.display = 'none';
         window.labAuth.requireAuth();
@@ -77,7 +81,9 @@
       if(!window.labAuth.isAdminUser()){
         if(main) main.style.display = 'none';
         window.location.href = 'index.html';
+        return;
       }
+      if(main) main.style.display = '';
     });
   </script>
 </body>
