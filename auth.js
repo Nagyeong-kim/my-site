@@ -239,9 +239,6 @@
   supabase.auth.onAuthStateChange(async (_event, session) => {
     currentSession = session;
     currentUser = (session?.user?.email || '').toLowerCase() || null;
-    if(currentUser){
-      await enforceApproval();
-    }
     updateAuthUI();
     updateSettingsNav();
   });
@@ -249,9 +246,6 @@
   // Wire header auth UI
   window.addEventListener('DOMContentLoaded', async ()=>{
     await syncSessionFromSupabase();
-    if(currentUser){
-      await enforceApproval();
-    }
     updateAuthUI();
     updateSettingsNav();
     wireAuthButtons();
