@@ -1,86 +1,13 @@
-/* auth.js — Global authentication via Supabase
-   - Email whitelist validation against Supabase table `approved_emails`
-   - Supabase Auth (magic link)
+/* auth.js — Simple session-based authentication (no email verification)
+   - No Supabase Auth required
+   - localStorage-based session storage
    - Applies to all pages
 */
 
 (function(){
   const ADMIN_EMAIL = 'knk6103@gmail.com';
-  const supabase = window.supabaseClient;
+  const SESSION_KEY = 'lab_user_email';
   let currentUser = null; // lowercased email
-  let currentSession = null;
-
-  if(!supabase){
-    console.error('Supabase client missing. Ensure supabase.js is loaded before auth.js');
-    return;
-  }
-
-  async function fetchApprovedEmails(){
-    const { data, error } = await supabase.from('approved_emails').select('email');
-    if(error){
-      console.error('Failed to fetch approved emails', error);
-      return [];
-    }
-    return (data || []).map(r => (r.email || '').toLowerCase()).filter(Boolean);
-  }
-
-  async function setApprovedEmails(emails){
-    // UPSERT 방식: 각 이메일을 개별적으로 upsert (삭제 없이)
-    const unique = Array.from(new Set((emails || []).map(e => e.toLowerCase()).filter(Boolean)));
-    console.log('Setting approved emails to:', unique);
-    
-    try {
-      // 기존 이메일 가져오기
-      const { data: existing } = await supabase.from('approved_emails').select('email');
-      const existingEmails = (existing || []).map(r => r.email);
-      console.log('기존 이메일:', existingEmails);
-      
-      // 삭제할 이메일 (기존에는 있지만 새 목록에는 없는 것)
-      const toDelete = existingEmails.filter(e => !unique.includes(e));
-      if(toDelete.length > 0) {
-        for(const email of toDelete) {
-          await supabase.from('approved_emails').delete().eq('email', email);
-        }
-        console.log('삭제된 이메일:', toDelete);
-      }
-      
-      // 추가할 이메일 (새 목록에는 있지만 기존에는 없는 것)
-      const toAdd = unique.filter(e => !existingEmails.includes(e));
-      if(toAdd.length > 0) {
-        const { data, error } = await supabase.from('approved_emails').insert(
-          toAdd.map(e => ({ email: e }))
-        ).select();
-        if(error) throw error;
-        console.log('추가된 이메일:', data);
-      }
-      
-      console.log('저장 완료!');
-    } catch(err) {
-      console.error('setApprovedEmails error:', err);
-      throw err;
-    }
-  }
-
-  async function isEmailApproved(email){
-    const target = (email || '').toLowerCase();
-    console.log('🔍 isEmailApproved 체크:', target);
-    if(!target) return false;
-    
-    const { data, error } = await supabase
-      .from('approved_emails')
-      .select('email')
-      .eq('email', target)
-      .limit(1)
-      .maybeSingle();
-    
-    console.log('✅ isEmailApproved 결과:', { email: target, data, error });
-    
-    if(error && error.code !== 'PGRST116'){ // PGRST116: no rows
-      console.error('approve check failed', error);
-      return false;
-    }
-    return !!data;
-  }
 
   function isAuthenticated(){
     return !!currentUser;
@@ -96,20 +23,29 @@
       alert('이메일을 입력하세요');
       return false;
     }
-    // Send magic link
-    const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href } });
-    if(error){
-      alert('로그인 요청 실패: ' + error.message);
+    if(!email.includes('@')){
+      alert('유효한 이메일을 입력하세요');
       return false;
     }
-    alert('로그인 링크를 이메일로 전송했습니다. 메일함을 확인해주세요.');
-    return true;
+    // Store in localStorage
+    try {
+      localStorage.setItem(SESSION_KEY, email);
+      currentUser = email;
+      updateAuthUI();
+      updateSettingsNav();
+      alert('로그인되었습니다!');
+      return true;
+    } catch(err) {
+      alert('로그인 실패: ' + err.message);
+      return false;
+    }
   }
 
   async function logout(){
-    await supabase.auth.signOut();
+    try {
+      localStorage.removeItem(SESSION_KEY);
+    } catch(_) {}
     currentUser = null;
-    currentSession = null;
     updateAuthUI();
     updateSettingsNav();
   }
@@ -155,7 +91,7 @@
           <h2>Lab Access</h2>
           <p>이메일로 로그인해주세요.</p>
           <input type="email" id="auth-email-input" placeholder="your.email@example.com" />
-          <button type="button" class="btn primary" id="auth-modal-signin">Sign In (Email Link)</button>
+          <button type="button" class="btn primary" id="auth-modal-signin">Sign In</button>
           <button type="button" class="btn" id="auth-modal-close" style="display:none;">Close</button>
         </div>
       `;
@@ -235,29 +171,15 @@
     if(signOutBtn) signOutBtn.addEventListener('click', logout);
   }
 
-  // Auth state change listener
-  supabase.auth.onAuthStateChange(async (_event, session) => {
-    currentSession = session;
-    currentUser = (session?.user?.email || '').toLowerCase() || null;
-    updateAuthUI();
-    updateSettingsNav();
-  });
-
-  // Wire header auth UI
-  window.addEventListener('DOMContentLoaded', async ()=>{
-    await syncSessionFromSupabase();
+  // Load session from localStorage on page load
+  window.addEventListener('DOMContentLoaded', ()=>{
+    try {
+      const saved = localStorage.getItem(SESSION_KEY);
+      if(saved) currentUser = saved;
+    } catch(_) {}
     updateAuthUI();
     updateSettingsNav();
     wireAuthButtons();
-  });
-
-  // Update auth UI when page becomes visible (switching tabs)
-  document.addEventListener('visibilitychange', async ()=>{
-    if(!document.hidden){
-      await syncSessionFromSupabase();
-      updateAuthUI();
-      updateSettingsNav();
-    }
   });
 
   // Expose to global
@@ -267,8 +189,6 @@
     login,
     logout,
     requireAuth,
-    getApprovedEmails: fetchApprovedEmails,
-    setApprovedEmails,
     updateAuthUI,
     updateSettingsNav,
     isAdminUser
